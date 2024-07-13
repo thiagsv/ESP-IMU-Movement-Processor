@@ -8,7 +8,8 @@ def main():
     mock = False
 
     if len(sys.argv) > 1:
-        mock = sys.argv[3] == 'True' or sys.argv[3] == '1' or sys.argv[3] == 'true'
+        if len(sys.argv) > 2:
+            mock = sys.argv[3] == 'True' or sys.argv[3] == '1' or sys.argv[3] == 'true'
 
         if not mock and len(sys.argv) >= 2:
             realStartAt = sys.argv[1]
