@@ -4,7 +4,7 @@ import opensim as osim
 from math import pi
 import datetime
 # Caminho relativo para o arquivo do modelo
-modelPath = 'opensim/models/Rajagopal_2015.osim'
+modelPath = 'Rajagopal_2015.osim'
 
 # Path para o arquivo de orientações
 orientationsFileName = 'data/mock/orientations.sto'
@@ -32,9 +32,5 @@ imuPlacer.run(visulizeCalibration)
 model = imuPlacer.getCalibratedModel()
 
 # Salvar o modelo calibrado como arquivo XML
-data_e_hora_atual = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-nome_arquivo_saida = f'calibrated_{data_e_hora_atual}.osim'
+nome_arquivo_saida = f'calibrated_example.osim'
 model.printToXML(nome_arquivo_saida)
-
-# Exibir mensagem de conclusão
-print(f"Modelo calibrado salvo como: {nome_arquivo_saida}")
