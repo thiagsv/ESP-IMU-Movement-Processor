@@ -11,16 +11,16 @@ def main():
     realStartAt = None
     realEndAt = None
 
-    dataHora = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+    dateTime = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
 
     if not mock and len(sys.argv) >= 4:
         realStartAt = sys.argv[2]
         realEndAt = sys.argv[3]
 
-    getCalibrationDataPath(mock, dataHora)
-    generateCalibratedModel(dataHora)
-    getTrackingDataPath(mock, dataHora)
-    trackingMovement(realStartAt, realEndAt)
+    getCalibrationDataPath(mock, dateTime)
+    generateCalibratedModel(dateTime)
+    getTrackingDataPath(mock, dateTime)
+    trackingMovement(mock, dateTime, realStartAt, realEndAt)
 
 if __name__ == '__main__':
     main()
