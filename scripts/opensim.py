@@ -1,6 +1,5 @@
 import opensim as osim
 from math import pi
-import sys
 
 modelPath = 'Rajagopal_2015.osim'
 orientationsFileName = 'data/'
