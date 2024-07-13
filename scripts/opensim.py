@@ -22,7 +22,7 @@ def getCalibrationDataPath(mock, dateTime):
         orientationsFileName = orientationsFileName + 'mock/orientations.sto'
         return
     
-    orientationsFileName += dateTime
+    orientationsFileName = orientationsFileName + dateTime + '.sto'
 
 def generateCalibratedModel(dateTime):
     """
@@ -67,7 +67,7 @@ def getTrackingDataPath(mock, dateTime):
     modelFileName += dateTime
 
     if not mock:
-        orientationsFileName = 'data/' + dateTime
+        orientationsFileName = 'data/' + dateTime + '.sto'
         startAt = float(startAt)  # Convert to float if necessary
         endAt = float(endAt)      # Convert to float if necessary
 
@@ -87,17 +87,14 @@ def trackingMovement(mock, dateTime, startAt = None, endAt = None):
     sensor_to_opensim_rotation = osim.Vec3(-pi/2, 0, 0)
     visualizeTracking = True
     resultsDirectory = 'IKResults'
-    trackingFileName = 'data/mock/orientations.sto'
 
-    if not mock:
-        trackingFileName = 'data/tracking_' + dateTime
-    else:
+    if mock:
         startAt = 7.25
         endAt = 15
 
     imuIK = osim.IMUInverseKinematicsTool()
     imuIK.set_model_file(modelFileName)
-    imuIK.set_orientations_file(trackingFileName)
+    imuIK.set_orientations_file(orientationsFileName)
     imuIK.set_sensor_to_opensim_rotations(sensor_to_opensim_rotation)
     imuIK.set_results_directory(resultsDirectory)
     imuIK.set_time_range(0, startAt)
