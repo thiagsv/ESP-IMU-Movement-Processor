@@ -1,4 +1,5 @@
-# Import OpenSim libraries
+# Exemplo de código para calibrar um modelo IMU
+
 import opensim as osim
 from math import pi
 import datetime
@@ -6,7 +7,7 @@ import datetime
 modelPath = 'opensim/models/Rajagopal_2015.osim'
 
 # Path para o arquivo de orientações
-orientationsFileName = 'data/mock/orientations_mock.sto'
+orientationsFileName = 'data/mock/orientations.sto'
 
 # Configurar outras variáveis
 sensor_to_opensim_rotations = osim.Vec3(-pi/2, 0, 0)
