@@ -7,11 +7,11 @@ def main():
     realEndAt = None
     mock = False
 
-    if len(sys.argv) > 1:
+    if len(sys.argv) >= 2:
         if len(sys.argv) > 2:
             mock = sys.argv[3] == 'True' or sys.argv[3] == '1' or sys.argv[3] == 'true'
 
-        if not mock and len(sys.argv) >= 2:
+        if not mock:
             realStartAt = sys.argv[1]
             realEndAt = sys.argv[2]
     
