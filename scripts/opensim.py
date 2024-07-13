@@ -10,13 +10,13 @@ trackingFileName = 'data/mock/orientations.sto'
 modelFileName = 'calibrated_model_'
 resultsDirectory = 'IKResults'
 
-def getCalibrationDataPath(mock, unixtimestamp):
+def getCalibrationDataPath(mock, dataHora):
     """
     Retrieves the calibration data path.
 
     Args:
     mock (bool): Whether to use mock data.
-    unixtimestamp (str): If not mock, specify the file with data.
+    dataHora (str): If not mock, specify the file with data.
 
     Returns:
     None
@@ -28,14 +28,14 @@ def getCalibrationDataPath(mock, unixtimestamp):
         orientationsFileName = orientationsFileName + 'mock/orientations.sto'
         return
     
-    orientationsFileName += unixtimestamp
+    orientationsFileName += dataHora
 
-def generateCalibratedModel(unixtimestamp):
+def generateCalibratedModel(dataHora):
     """
     Generate a calibrated model
 
     Args:
-    unixtimestamp (int)
+    dataHora (int)
 
     Returns:
     None
@@ -51,25 +51,25 @@ def generateCalibratedModel(unixtimestamp):
     imuPlacer.set_base_heading_axis(baseIMUHeading)
     imuPlacer.run(visulizeCalibration)
     model = imuPlacer.getCalibratedModel()
-    model.printToXML(f'calibrated_model_{unixtimestamp}')
+    model.printToXML(f'calibrated_model_{dataHora}')
 
-def getTrackingDataPath(mock, unixtimestamp):
+def getTrackingDataPath(mock, dataHora):
     """
     Retrieves the tracking data path.
 
     Args:
     mock (bool): Whether to use mock data.
-    unixtimestamp (str): timestamp of reading from ESP
+    dataHora (str): timestamp of reading from ESP
 
     Returns:
     None
     """
     global modelFileName, orientationsFileName
 
-    modelFileName += unixtimestamp
+    modelFileName += dataHora
 
     if not mock:
-        orientationsFileName = 'data/' + unixtimestamp
+        orientationsFileName = 'data/' + dataHora
         startAt = float(startAt)  # Convert to float if necessary
         endAt = float(endAt)      # Convert to float if necessary
 
