@@ -5,7 +5,7 @@ from scripts.opensim import getCalibrationDataPath, generateCalibratedModel, get
 def main():
     realStartAt = None
     realEndAt = None
-    mock = False
+    mock = True
 
     if len(sys.argv) >= 2:
         if len(sys.argv) > 2:
