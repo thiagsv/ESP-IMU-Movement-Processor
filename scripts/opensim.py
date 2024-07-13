@@ -71,7 +71,7 @@ def getTrackingDataPath(mock, dateTime):
         startAt = float(startAt)  # Convert to float if necessary
         endAt = float(endAt)      # Convert to float if necessary
 
-def trackingMovement(mock, dateTime, startAt = None, endAt = None):
+def trackingMovement(mock, startAt = None, endAt = None):
     """
     Executes inverse kinematics tracking.
 

@@ -20,7 +20,7 @@ def main():
     getCalibrationDataPath(mock, dateTime)
     generateCalibratedModel(dateTime)
     getTrackingDataPath(mock, dateTime)
-    trackingMovement(mock, dateTime, realStartAt, realEndAt)
+    trackingMovement(mock, realStartAt, realEndAt)
 
 if __name__ == '__main__':
     main()
