@@ -3,10 +3,12 @@ import datetime
 from scripts.opensim import getCalibrationDataPath, generateCalibratedModel, getTrackingDataPath, trackingMovement
 
 def main():
+    realStartAt = None
+    realEndAt = None
+    mock = False
+
     if len(sys.argv) > 1:
         mock = sys.argv[3] == 'True' or sys.argv[3] == '1' or sys.argv[3] == 'true'
-        realStartAt = None
-        realEndAt = None
 
         if not mock and len(sys.argv) >= 2:
             realStartAt = sys.argv[1]
