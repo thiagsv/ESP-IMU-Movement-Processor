@@ -7,7 +7,7 @@ def main():
         print("Usage: python main.py <mock> [<startAt> <endAt>]")
         sys.exit(1)
     
-    mock = sys.argv[1] == 'True'
+    mock = sys.argv[1] == 'True' or sys.argv[1] == '1' or sys.argv[1] == 'true'
     realStartAt = None
     realEndAt = None
 
