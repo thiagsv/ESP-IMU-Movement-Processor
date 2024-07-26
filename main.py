@@ -1,26 +1,34 @@
-import sys
 import datetime
+import tkinter as tk
+from tkinter import simpledialog, messagebox
 from scripts.opensim import getCalibrationDataPath, generateCalibratedModel, getTrackingDataPath, trackingMovement
 
-def main():
-    realStartAt = None
-    realEndAt = None
-    mock = True
-
-    if len(sys.argv) >= 2:
-        if len(sys.argv) > 2:
-            mock = sys.argv[3] == 'True' or sys.argv[3] == '1' or sys.argv[3] == 'true'
-
-        if not mock:
-            realStartAt = sys.argv[1]
-            realEndAt = sys.argv[2]
-    
+def runSimulation(mock, startAt=None, endAt=None):
     dateTime = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
 
     getCalibrationDataPath(mock, dateTime)
     generateCalibratedModel(dateTime)
     getTrackingDataPath(mock, dateTime)
-    trackingMovement(mock, realStartAt, realEndAt)
+    trackingMovement(mock, startAt, endAt)
+
+def getInfo():
+    mock = messagebox.askyesno("Mock Data", "Deseja usar dados mock?")
+    
+    if not mock:
+        realStartAt = simpledialog.askstring("Entrada", "Digite a data de início (YYYY-MM-DD):")
+        realEndAt = simpledialog.askstring("Entrada", "Digite a data de término (YYYY-MM-DD):")
+        runSimulation(mock, realStartAt, realEndAt)
+    else:
+        runSimulation(mock)
+
+def main():
+    window = tk.Tk()
+    window.title("OpenSim GUI")
+
+    botao_executar = tk.Button(window, text="Executar Scripts", command=getInfo)
+    botao_executar.pack(pady=20)
+
+    window.mainloop()
 
 if __name__ == '__main__':
     main()
