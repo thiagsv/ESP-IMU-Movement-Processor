@@ -28,7 +28,7 @@ def generateCalibratedModel():
     Generate a calibrated model
 
     Args:
-    dateTime (str): If not mock, specify the file with datetime.
+    None
 
     Returns:
     None
