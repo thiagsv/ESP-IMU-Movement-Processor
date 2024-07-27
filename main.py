@@ -4,7 +4,7 @@ from tkinter import simpledialog, messagebox
 from scripts.opensim import getCalibrationDataPath, generateCalibratedModel, trackingMovement
 from scripts.esp import requestEspData
 
-def runSimulation(mock, startAt=None, endAt=None):
+def runSimulation(mock, startAt = None, endAt = None):
     getCalibrationDataPath(mock)
     generateCalibratedModel()
     trackingMovement(mock, startAt, endAt)

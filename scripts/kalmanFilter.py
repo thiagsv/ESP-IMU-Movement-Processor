@@ -1,7 +1,7 @@
 import os
 import datetime
 
-def processEspData(espData, dateTime):
+def processEspData(espData):
     processedData = applyKalmanFilter(espData)
     stoStructure = createSTOStructure(processedData)
 
