@@ -1,12 +1,8 @@
-import aiohttp
-from scripts. kalmanFilter import processEspData
+import requests
 
-async def requestEspData(url):
+def requestEspData(url):
     """
-    Requests data from an ESP32 device.
-
-    This function establishes an asynchronous HTTP GET request to the specified URL,
-    retrieves the data in chunks, and processes the data using the `processEspData` function.
+    Requests IMU data from an ESP32 device.
 
     Args:
     url (str): The URL of the ESP32 device to request data from.
@@ -14,13 +10,14 @@ async def requestEspData(url):
     Returns:
     str: The processed data from the ESP32 device or an error message in case of connection issues.
     """
+    filePath = "data/esp/espData.txt"
     try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url) as response:
-                response.raise_for_status()
-                espData = ''
-                async for chunk in response.content.iter_chunked(1024):
-                    espData += chunk.decode('utf-8')
-                return processEspData(espData)
-    except aiohttp.ClientError as e:
-        return f'Error connecting to ESP32: {e}'
+        with requests.get(url, stream=True) as response:
+            response.raise_for_status()
+            with open(filePath, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=1024):
+                    f.write(chunk)
+        return filePath
+    except requests.RequestException as e:
+        print(f'Error connecting to ESP32: {e}')
+        return None

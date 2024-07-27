@@ -1,8 +1,8 @@
-import asyncio
 import tkinter as tk
 from tkinter import simpledialog, messagebox
 from scripts.opensim import getCalibrationDataPath, generateCalibratedModel, trackingMovement
 from scripts.esp import requestEspData
+from scripts.kalmanFilter import processEspData
 
 def runSimulation(mock, startAt = None, endAt = None):
     getCalibrationDataPath(mock)
@@ -22,10 +22,9 @@ def startSimulation():
 def getEspData():
     url = simpledialog.askstring('Entrada', 'Digite o URL do ESP32 (e.g., http://192.168.4.1/data):')
     if url:
-        loop = asyncio.get_event_loop()
-        dados = loop.run_until_complete(requestEspData(url))
-        if dados:
-            messagebox.showinfo('Dados do ESP32', f'Dados recebidos: {dados}')
+        filePath = requestEspData(url)
+        if filePath:
+            processEspData(filePath)
         else:
             messagebox.showerror('Erro', 'Falha ao obter dados do ESP32')
 
