@@ -15,9 +15,9 @@ def saveFile(data, local = False):
             os.makedirs(path)
         
         dateTime = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-        path += '/data_' + dateTime
+        path += '/data_' + dateTime + '.sto'
     else:
-        path = 'data/' + 'imuData'
+        path = 'data/imuData.sto'
 
     try:
         with open(path, 'w') as arquivo:
