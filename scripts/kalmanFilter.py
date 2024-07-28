@@ -2,14 +2,16 @@ import os
 import datetime
 import shutil
 
-def processEspData(espDataFile):
+processedFile = 'data/quaternions.sto'
+
+def processIMUData(espDataFile):
     """
     Processes data from the ESP32 device.
 
     This function processes the raw data from the ESP32 device by applying a Kalman filter 
     and then converting the processed data into a .sto file structure. The resulting data 
     is saved in two locations: a timestamped file in the 'opensimData' directory in the user's 
-    home directory and a fixed location 'data/imuData.sto'.
+    home directory and a fixed location 'data/quaternions.sto'.
 
     Args:
     espDataFile (str): Path to the collected data
@@ -18,7 +20,6 @@ def processEspData(espDataFile):
     None
     """
 
-    processedFile = 'data/imuData.sto'
     
     createSTOStructure(processedFile)
 
@@ -56,7 +57,7 @@ def saveFile2User():
     path += '/data_' + dateTime + '.sto'
 
     try:
-        shutil.copy('data/imuData.sto', path)
+        shutil.copy(processedFile, path)
     except Exception as e:
         print(f'Error at saving data: {e}')
 

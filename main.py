@@ -1,8 +1,8 @@
 import tkinter as tk
 from tkinter import simpledialog, messagebox
 from scripts.opensim import getCalibrationDataPath, generateCalibratedModel, trackingMovement
-from scripts.esp import requestEspData
-from scripts.kalmanFilter import processEspData
+from scripts.esp import requestIMUData
+from scripts.kalmanFilter import processIMUData
 
 def runSimulation(mock, startAt = None, endAt = None):
     getCalibrationDataPath(mock)
@@ -22,9 +22,9 @@ def startSimulation():
 def getEspData():
     url = simpledialog.askstring('Entrada', 'Digite o URL do ESP32 (e.g., http://192.168.4.1/data):')
     if url:
-        filePath = requestEspData(url)
+        filePath = requestIMUData(url)
         if filePath:
-            processEspData(filePath)
+            processIMUData(filePath)
         else:
             messagebox.showerror('Erro', 'Falha ao obter dados do ESP32')
 

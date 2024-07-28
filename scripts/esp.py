@@ -1,6 +1,6 @@
 import requests
 
-def requestEspData(url):
+def requestIMUData(url):
     """
     Requests IMU data from an ESP32 device.
 
@@ -10,7 +10,7 @@ def requestEspData(url):
     Returns:
     str: The processed data from the ESP32 device or an error message in case of connection issues.
     """
-    filePath = "data/esp/espData.txt"
+    filePath = 'data/imu/espData.txt'
     try:
         with requests.get(url, stream=True) as response:
             response.raise_for_status()

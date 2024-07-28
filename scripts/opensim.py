@@ -2,7 +2,6 @@ import opensim as osim
 from math import pi
 
 orientationsFileName = ''
-modelFileName = 'calibrated_model'
 
 def getCalibrationDataPath(mock):
     """
@@ -21,7 +20,7 @@ def getCalibrationDataPath(mock):
         orientationsFileName = 'data/mock/orientations.sto'
         return
     
-    orientationsFileName = 'data/imuData.sto'
+    orientationsFileName = 'data/quaternions.sto'
 
 def generateCalibratedModel():
     """
@@ -66,6 +65,7 @@ def trackingMovement(mock, startAt = None, endAt = None):
     sensor_to_opensim_rotation = osim.Vec3(-pi/2, 0, 0)
     visualizeTracking = True
     resultsDirectory = 'IKResults'
+    modelFileName = 'calibrated_model'
 
     if mock:
         startAt = 7.25
