@@ -19,9 +19,6 @@ def processEspData(espDataFile):
     """
 
     processedFile = 'data/imuData.sto'
-
-    with open(processedFile, 'w') as out_f:
-        out_f.write('')
     
     createSTOStructure(processedFile)
 
@@ -63,8 +60,22 @@ def saveFile2User():
     except Exception as e:
         print(f'Error at saving data: {e}')
 
-def createSTOStructure(espData):
-    return espData
+def createSTOStructure(processedFile):
+    """
+    Create .sto structure required by OpenSim
+
+    Args:
+    None
+
+    Returns:
+    None
+    """
+    with open(processedFile, 'w') as out_f:
+        out_f.write('DataRate=100.000000\n')
+        out_f.write('DataType=Quaternion\n')
+        out_f.write('version=3\n')
+        out_f.write('OpenSimVersion=4.1\n')
+        out_f.write('endheader\n')
 
 def applyKalmanFilter(espData):
     return espData
