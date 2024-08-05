@@ -1,17 +1,16 @@
 import tkinter as tk
 from tkinter import simpledialog, messagebox
 from scripts.opensim import getCalibrationDataPath, generateCalibratedModel, trackingMovement
-from scripts.esp import requestIMUData, startCollectIMUData
+from scripts.esp import requestIMUData, startCollectIMUData, finishCollectIMUData
 from scripts.kalmanFilter import processIMUData
 
-def runSimulation(mock, startAt = None, endAt = None):
+def runSimulation(mock, startAt=None, endAt=None):
     getCalibrationDataPath(mock)
     generateCalibratedModel()
     trackingMovement(mock, startAt, endAt)
 
 def startSimulation():
     mock = messagebox.askyesno('Mock Data', 'Deseja usar dados mock?')
-    
     if not mock:
         realStartAt = simpledialog.askstring('Entrada', 'Digite a data de início (YYYY-MM-DD HH:ii:ss):')
         realEndAt = simpledialog.askstring('Entrada', 'Digite a data de término (YYYY-MM-DD HH:ii:ss):')
@@ -32,23 +31,42 @@ def startCollecting():
     ip = simpledialog.askstring('Entrada', 'Digite o IP do ESP32 (e.g., 192.168.4.1):')
     if ip:
         startCollectIMUData(ip)
+        hideOtherButtons()
     else:
-        messagebox.showerror('Erro', 'Falha ao iniciar a coleta de dados do ESP32')    
+        messagebox.showerror('Erro', 'Falha ao iniciar a coleta de dados do ESP32')
+
+def finishCollect(ip):
+    finishCollectIMUData(ip)
+    getEspData()
+    showOtherButtons()
+
+def hideOtherButtons():
+    startCollectBtn.pack_forget()
+    simulateBtn.pack_forget()
+    getEspDataBtn.pack_forget()
+    finishCollectBtn.pack(pady=10)
+
+def showOtherButtons():
+    startCollectBtn.pack(pady=10)
+    simulateBtn.pack(pady=10)
+    getEspDataBtn.pack(pady=10)
+    finishCollectBtn.pack_forget()
 
 def main():
+    global window
     window = tk.Tk()
     window.title('OpenSim GUI')
-    window.geometry('300x150')
+    window.geometry('300x200')
 
     startCollectBtn = tk.Button(window, text='Iniciar a coleta de dados', command=startCollecting)
-    startCollectBtn.pack(pady=20)
+    startCollectBtn.pack(pady=10)
 
-    simulateBtn = tk.Button(window, text='Executar Scripts', command=startSimulation)
-    simulateBtn.pack(pady=20)
+    simulateBtn = tk.Button(window, text='Realizar simulação', command=startSimulation)
+    simulateBtn.pack(pady=10)
 
-    getEspDataBtn = tk.Button(window, text='Obter Dados do ESP32', command=getEspData)
-    getEspDataBtn.pack(pady=20)    
-    
+    finishCollectBtn = tk.Button(window, text='Finalizar a coleta de dados', command=lambda: finishCollect(ip))
+    finishCollectBtn.pack_forget()
+
     window.mainloop()
 
 if __name__ == '__main__':
