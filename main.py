@@ -5,11 +5,22 @@ from scripts.esp import requestIMUData, startCollectIMUData, finishCollectIMUDat
 from scripts.kalmanFilter import processIMUData
 
 def runSimulation(mock, startAt=None, endAt=None):
+    """
+    Executa a simulação usando dados calibrados.
+
+    Args:
+        mock (bool): Indica se os dados mock devem ser usados.
+        startAt (str, opcional): Data e hora de início da simulação.
+        endAt (str, opcional): Data e hora de término da simulação.
+    """
     getCalibrationDataPath(mock)
     generateCalibratedModel()
     trackingMovement(mock, startAt, endAt)
 
 def startSimulation():
+    """
+    Inicia a simulação. Pergunta ao usuário se deseja usar dados mock e coleta as datas se necessário.
+    """
     mock = messagebox.askyesno('Mock Data', 'Deseja usar dados mock?')
     if not mock:
         realStartAt = simpledialog.askstring('Entrada', 'Digite a data de início (YYYY-MM-DD HH:ii:ss):')
@@ -19,6 +30,9 @@ def startSimulation():
         runSimulation(mock)
 
 def getEspData():
+    """
+    Obtém os dados do ESP32 e processa os dados IMU.
+    """
     ip = simpledialog.askstring('Entrada', 'Digite o IP do ESP32 (e.g., 192.168.4.1):')
     if ip:
         filePath = requestIMUData(ip)
@@ -28,6 +42,9 @@ def getEspData():
             messagebox.showerror('Erro', 'Falha ao obter dados do ESP32')
 
 def startCollecting():
+    """
+    Inicia a coleta de dados IMU do ESP32 e oculta os outros botões.
+    """
     ip = simpledialog.askstring('Entrada', 'Digite o IP do ESP32 (e.g., 192.168.4.1):')
     if ip:
         startCollectIMUData(ip)
@@ -36,24 +53,39 @@ def startCollecting():
         messagebox.showerror('Erro', 'Falha ao iniciar a coleta de dados do ESP32')
 
 def finishCollect(ip):
+    """
+    Finaliza a coleta de dados IMU do ESP32, obtém os dados e mostra novamente os botões ocultos.
+
+    Args:
+        ip (str): O endereço IP do ESP32.
+    """
     finishCollectIMUData(ip)
     getEspData()
     showOtherButtons()
 
 def hideOtherButtons():
+    """
+    Oculta os botões 'Iniciar a coleta de dados', 'Realizar simulação' e 'Obter Dados do ESP32'.
+    """
     startCollectBtn.pack_forget()
     simulateBtn.pack_forget()
     getEspDataBtn.pack_forget()
     finishCollectBtn.pack(pady=10)
 
 def showOtherButtons():
+    """
+    Mostra os botões 'Iniciar a coleta de dados', 'Realizar simulação' e 'Obter Dados do ESP32', e oculta o botão 'Finalizar a coleta de dados'.
+    """
     startCollectBtn.pack(pady=10)
     simulateBtn.pack(pady=10)
     getEspDataBtn.pack(pady=10)
     finishCollectBtn.pack_forget()
 
 def main():
-    global window
+    """
+    Configura a interface gráfica e inicializa a aplicação.
+    """
+    global window, startCollectBtn, simulateBtn, getEspDataBtn, finishCollectBtn
     window = tk.Tk()
     window.title('OpenSim GUI')
     window.geometry('300x200')
