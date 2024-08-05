@@ -9,9 +9,9 @@ def runSimulation(mock, startAt=None, endAt=None):
     Executa a simulação usando dados calibrados.
 
     Args:
-        mock (bool): Indica se os dados mock devem ser usados.
-        startAt (str, opcional): Data e hora de início da simulação.
-        endAt (str, opcional): Data e hora de término da simulação.
+    mock (bool): Indica se os dados mock devem ser usados.
+    startAt (str, opcional): Data e hora de início da simulação.
+    endAt (str, opcional): Data e hora de término da simulação.
     """
     getCalibrationDataPath(mock)
     generateCalibratedModel()
@@ -23,8 +23,8 @@ def startSimulation():
     """
     mock = messagebox.askyesno('Mock Data', 'Deseja usar dados mock?')
     if not mock:
-        realStartAt = simpledialog.askstring('Entrada', 'Digite a data de início (YYYY-MM-DD HH:ii:ss):')
-        realEndAt = simpledialog.askstring('Entrada', 'Digite a data de término (YYYY-MM-DD HH:ii:ss):')
+        realStartAt = simpledialog.askstring('Entrada', 'Digite o tempo de início de análise desejada:')
+        realEndAt = simpledialog.askstring('Entrada', 'Digite o tempo de final de análise desejada:')
         runSimulation(mock, realStartAt, realEndAt)
     else:
         runSimulation(mock)
@@ -57,7 +57,7 @@ def finishCollect(ip):
     Finaliza a coleta de dados IMU do ESP32, obtém os dados e mostra novamente os botões ocultos.
 
     Args:
-        ip (str): O endereço IP do ESP32.
+    ip (str): O endereço IP do ESP32.
     """
     finishCollectIMUData(ip)
     getEspData()
