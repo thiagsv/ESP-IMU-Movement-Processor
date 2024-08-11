@@ -49,7 +49,7 @@ def requestCollectESP32(ip, collect):
     ip (str): O endereço IP do ESP32.
     collect (str): '1' para iniciar a coleta, '0' para finalizar.
     """
-    url = f'http://{ip}/iniciar_coleta'
+    url = f'http://{ip}/toggle'
     payload = {
         'collect': collect
     }
