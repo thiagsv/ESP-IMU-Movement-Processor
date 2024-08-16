@@ -98,7 +98,7 @@ def main():
     simulateBtn = tk.Button(window, text='Realizar simulação', command=startSimulation)
     simulateBtn.pack(pady=10)
 
-    finishCollectBtn = tk.Button(window, text='Finalizar a coleta de dados', command=lambda: finishCollect(ip))
+    finishCollectBtn = tk.Button(window, text='Finalizar a coleta de dados', command=finishCollect())
     finishCollectBtn.pack_forget()
 
     window.mainloop()
