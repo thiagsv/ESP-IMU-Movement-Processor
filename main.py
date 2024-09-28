@@ -29,7 +29,15 @@ def startSimulation():
     mock = messagebox.askyesno('Mock Data', 'Deseja usar dados mock?')
     if not mock:
         realStartAt = simpledialog.askstring('Entrada', 'Digite o tempo de início de análise desejada:')
+        if realStartAt is None:
+            showOtherButtons()
+            return
+
         realEndAt = simpledialog.askstring('Entrada', 'Digite o tempo de final de análise desejada:')
+        if realEndAt is None:
+            showOtherButtons()
+            return
+
         runSimulation(mock, realStartAt, realEndAt)
     else:
         runSimulation(mock)
@@ -48,7 +56,8 @@ def startCollecting():
     """
     Inicia a coleta de dados IMU do ESP32 e oculta os outros botões.
     """
-    ipEsp = simpledialog.askstring('Entrada', 'Digite o IP do ESP32 (e.g., 192.168.4.1):')
+    global ipEsp
+    ipEsp = simpledialog.askstring('Entrada', 'Digite o IP do ESP32:', initialvalue='192.168.4.1')
     if ipEsp:
         startCollectIMUData(ipEsp)
         hideOtherButtons()
@@ -92,13 +101,12 @@ def main():
     window.title('OpenSim GUI')
     window.geometry('300x200')
 
-    startCollectBtn = tk.Button(window, text='Iniciar a coleta de dados', command=startCollecting)
+    startCollectBtn = tk.Button(window, text='Iniciar a coleta de dados', command=startCollecting, height=1, width=20)
+    simulateBtn = tk.Button(window, text='Realizar simulação', command=startSimulation, height=1, width=20)
+    finishCollectBtn = tk.Button(window, text='Finalizar a coleta de dados', command=finishCollect, height=1, width=20)
+
     startCollectBtn.pack(pady=10)
-
-    simulateBtn = tk.Button(window, text='Realizar simulação', command=startSimulation)
     simulateBtn.pack(pady=10)
-
-    finishCollectBtn = tk.Button(window, text='Finalizar a coleta de dados', command=finishCollect)
     finishCollectBtn.pack_forget()
 
     window.mainloop()
