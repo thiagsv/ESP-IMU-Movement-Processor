@@ -1,52 +1,79 @@
 import requests
 
-buffer = ""  # Buffer global para dados parciais
+buffer = ""  # Buffer global para armazenar dados parciais
 
-def process_chunk(chunk):
+def processChunk(chunk, fileHandle):
+    """
+    Processa um chunk de dados e salva no arquivo sempre que uma linha completa for identificada.
+
+    Args:
+    chunk (str): O chunk de dados recebido.
+    fileHandle (File): O arquivo onde os dados serão gravados.
+    """
     global buffer
     buffer += chunk  # Adiciona o novo chunk ao buffer
-    lines = buffer.split(';')  # Divide o buffer em linhas completas
-    processed_data = []  # Lista para armazenar dados processados
 
-    # Processa todas as linhas completas, exceto a última
-    for line in lines[:-1]:
+    # Continua processando enquanto houver uma linha completa terminada por ';\n'
+    while ';\n' in buffer:  
+        # Divide o buffer na primeira ocorrência de ';\n', mantendo a parte incompleta no buffer
+        line, buffer = buffer.split(';\n', 1)
+        # Processa a linha completa, removendo qualquer espaço em branco e o ';'
+        processedLine = processLine(line.strip())
+
+        if processedLine:
+            # Converte a lista de dados para string antes de escrever no arquivo
+            outputLine = ','.join(map(str, processedLine)) + ';\n'
+            fileHandle.write(outputLine.encode('utf-8'))  # Grava os dados como bytes
+
+def processLine(line):
+    """
+    Processa uma linha de dados do IMU.
+    A linha está no formato: 'AcX,AcY,AcZ,GyX,GyY,GyZ'
+
+    Args:
+    line (str): A linha contendo os dados do IMU no formato esperado.
+
+    Returns:
+    list: Uma lista de valores float correspondentes aos dados do IMU.
+    """
+    # Separa os valores que estão separados por vírgula
+    values = line.split(',')
+
+    # Converte os valores para float, ignorando qualquer valor inválido
+    processedValues = []
+    for value in values:
         try:
-            processed_data.append(process_line(line))  # Adiciona os dados processados à lista
-        except ValueError as e:
-            print(f"Erro ao processar a linha: {line}. Erro: {e}")
+            processedValues.append(float(value))  # Converte para float
+        except ValueError:
+            print(f"Erro ao converter o valor para float: '{value}' na linha '{line}'")
+            # Se o valor for inválido, ignoramos ele
 
-    # Guarda a última parte da linha incompleta no buffer
-    buffer = lines[-1]
-
-    return processed_data  # Retorna os dados processados
-
-def process_line(line):
-    line = line.strip()
-    
-    if line:  # Certifique-se de que a linha não está vazia
-        values = [float(value) for value in line.split(',') if value]
-        return values
-    return []
+    return processedValues
 
 def requestIMUData(ip):
+    """
+    Requests IMU data from an ESP32 device.
+
+    Args:
+    ip (str): The IP of the ESP32 device to request data from.
+
+    Returns:
+    str: The path to the processed data file or an error message in case of connection issues.
+    """
     filePath = 'data/imu/espData.txt'
     url = f'http://{ip}/getData'
+    
     try:
         with requests.get(url, stream=True) as response:
             response.raise_for_status()
-            with open(filePath, 'wb') as f:  # Abre o arquivo para escrita (sobrescreve o arquivo)
+            with open(filePath, 'wb') as f:
                 for chunk in response.iter_content(chunk_size=1024):
-                    chunk_decoded = chunk.decode('utf-8')  # Decodifica o chunk para string
-                    processed_data = process_chunk(chunk_decoded)  # Processa o chunk
-                    # Grava os dados processados no arquivo
-                    for data in processed_data:
-                        f.write(','.join(map(str, data)) + ';\n')  # Escreve os dados processados no formato desejado
+                    chunkDecoded = chunk.decode('utf-8')  # Decodifica o chunk para string
+                    processChunk(chunkDecoded, f)  # Processa o chunk e escreve diretamente no arquivo
 
-            # Limpa o buffer após o processamento completo
-            buffer = ""  # Reseta o buffer após a coleta
         return filePath
     except requests.RequestException as e:
-        print(f"Error connecting to ESP32: {e}")
+        print(f'Error connecting to ESP32: {e}')
         return None
 
 def startCollectIMUData(ip):
@@ -73,7 +100,6 @@ def requestCollectESP32(ip):
 
     Args:
     ip (str): O endereço IP do ESP32.
-    collect (str): '1' para iniciar a coleta, '0' para finalizar.
     """
     url = f'http://{ip}/toggle'
 
@@ -86,4 +112,3 @@ def requestCollectESP32(ip):
         response.raise_for_status()
     except requests.exceptions.RequestException as err:
         print(f'Ocorreu um erro ao iniciar a coleta de dados: {err}')
-

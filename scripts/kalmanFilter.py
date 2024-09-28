@@ -20,7 +20,6 @@ def processIMUData(espDataFile):
     None
     """
 
-    
     createSTOStructure(processedFile)
 
     try:

@@ -88,8 +88,8 @@ def showOtherButtons():
     """
     global startCollectBtn, startCollectBtn, finishCollectBtn
 
-    startCollectBtn.pack(pady=10)
-    simulateBtn.pack(pady=10)
+    startCollectBtn.pack(pady=10, padx=10)
+    simulateBtn.pack(pady=10, padx=10)
     finishCollectBtn.pack_forget()
 
 def main():
@@ -101,9 +101,9 @@ def main():
     window.title('OpenSim GUI')
     window.geometry('300x200')
 
-    startCollectBtn = tk.Button(window, text='Iniciar a coleta de dados', command=startCollecting, height=1, width=20)
-    simulateBtn = tk.Button(window, text='Realizar simulação', command=startSimulation, height=1, width=20)
-    finishCollectBtn = tk.Button(window, text='Finalizar a coleta de dados', command=finishCollect, height=1, width=20)
+    startCollectBtn = tk.Button(window, text='Iniciar a coleta de dados', command=startCollecting, height=2, width=20)
+    simulateBtn = tk.Button(window, text='Realizar simulação', command=startSimulation, height=2, width=20)
+    finishCollectBtn = tk.Button(window, text='Finalizar a coleta de dados', command=finishCollect, height=2, width=20)
 
     startCollectBtn.pack(pady=10)
     simulateBtn.pack(pady=10)
