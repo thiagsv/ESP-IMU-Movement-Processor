@@ -67,7 +67,7 @@ def finishCollectIMUData(ip):
     """
     requestCollectESP32(ip)
 
-def requestCollectESP32(ip, collect):
+def requestCollectESP32(ip):
     """
     Faz uma requisição POST para iniciar ou finalizar a coleta de dados no ESP32.
 
