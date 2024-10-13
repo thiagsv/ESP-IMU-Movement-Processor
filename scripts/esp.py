@@ -66,6 +66,13 @@ def requestIMUData(ip):
     try:
         with requests.get(url, stream=True) as response:
             response.raise_for_status()
+
+            content_length = response.headers.get('Content-Length')
+            if content_length:
+                chunk_size = min(1024, int(content_length) // 10)  # Ajusta dinamicamente o chunk
+            else:
+                chunk_size = 1024  # Valor padrão
+
             with open(filePath, 'wb') as f:
                 for chunk in response.iter_content(chunk_size=1024):
                     chunkDecoded = chunk.decode('utf-8')  # Decodifica o chunk para string
