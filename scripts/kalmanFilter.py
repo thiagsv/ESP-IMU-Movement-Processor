@@ -76,6 +76,7 @@ def createSTOStructure(processedFile):
         out_f.write('version=3\n')
         out_f.write('OpenSimVersion=4.1\n')
         out_f.write('endheader\n')
+        out_f.write('time\tpelvis_imu\tfemur_r_imu\tfemur_l_imu\ttibia_r_imu\ttibia_l_imu\n')
 
 def applyKalmanFilter(espData):
     return espData
