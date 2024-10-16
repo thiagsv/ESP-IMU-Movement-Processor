@@ -1,6 +1,7 @@
 import requests
 
 buffer = ""  # Buffer global para armazenar dados parciais
+incomplete_value = ""  # Variável global para armazenar valores incompletos
 
 def processChunk(chunk, fileHandle):
     """
@@ -10,20 +11,33 @@ def processChunk(chunk, fileHandle):
     chunk (str): O chunk de dados recebido.
     fileHandle (File): O arquivo onde os dados serão gravados.
     """
-    global buffer
+    global buffer, incomplete_value
     buffer += chunk  # Adiciona o novo chunk ao buffer
 
     # Continua processando enquanto houver uma linha completa terminada por ';\n'
-    while ';\n' in buffer:  
+    while ';\n' in buffer:
         # Divide o buffer na primeira ocorrência de ';\n', mantendo a parte incompleta no buffer
         line, buffer = buffer.split(';\n', 1)
-        # Processa a linha completa, removendo qualquer espaço em branco e o ';'
+
+        # Se havia um valor incompleto (por exemplo, '-12'), concatenamos ao primeiro valor da linha
+        if incomplete_value:
+            line = incomplete_value + line
+            incomplete_value = ""  # Resetar a variável após a concatenação
+
+        # Processa a linha completa
         processedLine = processLine(line.strip())
 
         if processedLine:
             # Converte a lista de dados para string antes de escrever no arquivo
             outputLine = ','.join(map(str, processedLine)) + ';\n'
             fileHandle.write(outputLine.encode('utf-8'))  # Grava os dados como bytes
+
+    # Se sobrar um número incompleto no buffer (que não foi seguido por ';\n')
+    if buffer and not buffer.endswith(';\n'):
+        incomplete_value = buffer  # Armazena o valor incompleto
+        buffer = ""  # Limpa o buffer para aguardar o próximo chunk
+    else:
+        incomplete_value = ""  # Limpar o valor incompleto se não houver mais dados pendentes
 
 def processLine(line):
     """
@@ -42,10 +56,13 @@ def processLine(line):
     # Converte os valores para float, ignorando qualquer valor inválido
     processedValues = []
     for value in values:
+        # Remove qualquer ponto e vírgula ou newline residual que possa estar no valor
+        cleaned_value = value.replace(';\n', '').strip()
+
         try:
-            processedValues.append(float(value))  # Converte para float
+            processedValues.append(float(cleaned_value))  # Converte para float
         except ValueError:
-            print(f"Erro ao converter o valor para float: '{value}' na linha '{line}'")
+            print(f"Erro ao converter o valor para float: '{cleaned_value}' na linha '{line}'")
             # Se o valor for inválido, ignoramos ele
 
     return processedValues
@@ -53,10 +70,8 @@ def processLine(line):
 def requestIMUData(ip):
     """
     Requests IMU data from an ESP32 device.
-
     Args:
     ip (str): The IP of the ESP32 device to request data from.
-
     Returns:
     str: The path to the processed data file or an error message in case of connection issues.
     """
@@ -67,15 +82,13 @@ def requestIMUData(ip):
         with requests.get(url, stream=True) as response:
             response.raise_for_status()
 
-            content_length = response.headers.get('Content-Length')
-            if content_length:
-                chunk_size = min(1024, int(content_length) // 10)  # Ajusta dinamicamente o chunk
-            else:
-                chunk_size = 1024  # Valor padrão
+            # Não precisa mais verificar o Content-Length se a resposta é chunked
+            chunk_size = 1024  # Valor padrão, já adequado
 
             with open(filePath, 'wb') as f:
-                for chunk in response.iter_content(chunk_size=1024):
+                for chunk in response.iter_content(chunk_size=chunk_size):
                     chunkDecoded = chunk.decode('utf-8')  # Decodifica o chunk para string
+                    print(f"Chunk recebido: {chunkDecoded}")  # Log para depuração
                     processChunk(chunkDecoded, f)  # Processa o chunk e escreve diretamente no arquivo
 
         return filePath
