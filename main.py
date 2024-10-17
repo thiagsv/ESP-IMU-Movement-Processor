@@ -1,4 +1,5 @@
 import tkinter as tk
+import time
 from tkinter import simpledialog, messagebox
 from scripts.opensim import getCalibrationDataPath, generateCalibratedModel, trackingMovement
 from scripts.esp import requestIMUData, startCollectIMUData, finishCollectIMUData
@@ -69,6 +70,7 @@ def finishCollect():
     Finaliza a coleta de dados IMU do ESP32, obtém os dados e mostra novamente os botões ocultos.
     """
     finishCollectIMUData(ipEsp)
+    time.sleep(1); # Garantir a conclusão da obtenção dos dados no esp
     getEspData()
     showOtherButtons()
 
