@@ -1,6 +1,7 @@
 import os
 import datetime
 import shutil
+from scripts.applyKalmanFilter import applyKalmanFilter
 
 processedFile = 'data/quaternions.sto'
 
@@ -26,7 +27,7 @@ def processIMUData(espDataFile):
         with open(espDataFile, 'r') as f:
             data = f.read()
             dataList = list(map(float, data.split(',')))
-            filteredData = applyKalmanFilter(dataList)
+            filteredData = applyFilter()
 
             with open(processedFile, 'a') as out_f:
                 out_f.write(','.join(map(str, filteredData)) + '\n')
@@ -34,8 +35,6 @@ def processIMUData(espDataFile):
             saveFile2User()
     except Exception as e:
         print(f'Error processing file: {e}')
-        
-
 
 def saveFile2User():
     """
@@ -78,5 +77,5 @@ def createSTOStructure(processedFile):
         out_f.write('endheader\n')
         out_f.write('time\tpelvis_imu\tfemur_r_imu\tfemur_l_imu\ttibia_r_imu\ttibia_l_imu\n')
 
-def applyKalmanFilter(espData):
-    return espData
+def applyFilter():
+    applyKalmanFilter()
