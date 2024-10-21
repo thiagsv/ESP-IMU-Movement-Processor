@@ -24,14 +24,7 @@ def processIMUData(espDataFile):
     createSTOStructure(processedFile)
 
     try:
-        with open(espDataFile, 'r') as f:
-            data = f.read()
-            dataList = list(map(float, data.split(',')))
-            filteredData = applyFilter()
-
-            with open(processedFile, 'a') as out_f:
-                out_f.write(','.join(map(str, filteredData)) + '\n')
-            
+            applyFilter()
             saveFile2User()
     except Exception as e:
         print(f'Error processing file: {e}')

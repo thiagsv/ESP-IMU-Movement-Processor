@@ -50,7 +50,6 @@ def getCofactor(mat, temp, p, q, n):
                     j = 0
                     i += 1
 
-
 def determinantOfMatrix(mat, n):
     D = 0
     if (n == 1):
@@ -138,7 +137,7 @@ def applyKalmanFilter():
     linhaUm = True
     tempoInicial = 0
     linhaCalcular = None
-    with open('data/imu/espData2.txt', 'r') as f:
+    with open('data/imu/espData.txt', 'r') as f:
         while True:
             dadosBloco = f.read(20)  # Ler um bloco maior para capturar múltiplas linhas
 
@@ -205,9 +204,6 @@ def applyKalmanFilter():
                 z = np.zeros(n_z)
 
                 if num == 0:
-                    inicio = 0
-
-                    # parametros obtidos experimentalmente analisando os gráficos plotados
                     n_roll_real = 3
                     n_pitch_real = 3
                     n_yaw_real = 3
@@ -217,8 +213,6 @@ def applyKalmanFilter():
                     m_yaw_real = 0.1
 
                 elif num == 1:
-                    inicio = 7
-
                     n_roll_real = 3
                     n_pitch_real = 3
                     n_yaw_real = 3
@@ -228,8 +222,6 @@ def applyKalmanFilter():
                     m_yaw_real = 0.1
 
                 elif num == 2:
-                    inicio = 14
-
                     n_roll_real = 3
                     n_pitch_real = 3
                     n_yaw_real = 3
@@ -239,8 +231,6 @@ def applyKalmanFilter():
                     m_yaw_real = 3
 
                 elif num == 3:
-                    inicio = 21
-
                     n_roll_real = 3
                     n_pitch_real = 3
                     n_yaw_real = 3
@@ -250,8 +240,6 @@ def applyKalmanFilter():
                     m_yaw_real = 0.1
 
                 elif num == 4:
-                    inicio = 28
-
                     n_roll_real = 3
                     n_pitch_real = 3
                     n_yaw_real = 3
@@ -261,8 +249,6 @@ def applyKalmanFilter():
                     m_yaw_real = 0.1
 
                 elif num == 5:
-                    inicio = 35
-
                     n_roll_real = 3
                     n_pitch_real = 3
                     n_yaw_real = 3
@@ -444,7 +430,7 @@ def applyKalmanFilter():
                 quart.append(quartg)
 
             linha = ''
-            with open('opensimTeste.sto', 'a') as f2:
+            with open('data/quaternions.sto', 'a') as f2:
                 f2.write(str(temposg))
                 f2.write('\t')
                 for quat in quart:
