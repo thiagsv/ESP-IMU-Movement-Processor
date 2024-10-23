@@ -11,6 +11,8 @@ def requestIMUData(ip):
     str: The path to the processed data file or an error message in case of connection issues.
     """
     filePath = 'data/imu/espData.txt'
+    filteredFilePath = 'data/imu/espDataFiltered.txt'
+
     url = f'http://{ip}/getData'
     
     try:
@@ -31,8 +33,8 @@ def requestIMUData(ip):
                         except UnicodeDecodeError as e:
                             print(f"Erro de decodificação: {e}")
                             return None
-
-        return filePath
+        
+        validateAndFilterSets(filePath, filteredFilePath)
     
     except requests.RequestException as e:
         print(f'Error connecting to ESP32: {e}')
@@ -75,3 +77,65 @@ def requestCollectESP32(ip):
         response.raise_for_status()
     except requests.exceptions.RequestException as err:
         print(f'Ocorreu um erro ao iniciar a coleta de dados: {err}')
+
+
+def validateAndFilterSets(inputFile, outputFile):
+    result = []
+    currentSet = []
+    currentLine = ""
+    searchingNextSet = False  # Indica se estamos procurando o próximo conjunto
+
+    with open(inputFile, 'r') as infile, open(outputFile, 'w') as outfile:
+        while True:
+            char = infile.read(1)  # Lê um caractere por vez
+            if not char:
+                break  # Fim do arquivo
+            
+            if searchingNextSet:
+                # Acumula os caracteres até encontrar ";0,"
+                currentLine += char
+                if currentLine.endswith(';0,'):
+                    searchingNextSet = False  # Encontramos o início do próximo conjunto
+                    currentSet = []  # Reseta o conjunto atual
+                    currentLine = '0,'  # Reseta a linha inicial para começar do conjunto
+                continue
+
+            if char == ';':
+                # Fim de uma linha detectado
+                columns = currentLine.split(',')
+
+                # Verifica se há exatamente 8 colunas
+                if len(columns) == 8:
+                    try:
+                        # Verifica se o primeiro valor da linha corresponde ao índice esperado
+                        expectedIndex = len(currentSet) % 5
+                        if int(columns[0]) == expectedIndex:
+                            # Adiciona a linha completa (incluindo o ;) ao conjunto atual
+                            currentSet.append(currentLine + ';')
+                        else:
+                            # Linha do conjunto falhou, busca o próximo conjunto começando com ";0,"
+                            searchingNextSet = True
+                            currentLine = ""
+                            continue
+                    except ValueError:
+                        # Índice inválido, busca o próximo conjunto começando com ";0,"
+                        searchingNextSet = True
+                        currentLine = ""
+                        continue
+                else:
+                    # Número incorreto de colunas, busca o próximo conjunto começando com ";0,"
+                    searchingNextSet = True
+                    currentLine = ""
+                    continue
+                
+                # Se o conjunto tem 5 linhas, adiciona ao resultado e reseta
+                if len(currentSet) == 5:
+                    outfile.write(''.join(currentSet))
+                    currentSet = []
+
+                # Reseta a linha atual após o processamento
+                currentLine = ""
+            else:
+                # Acumula o caractere na linha atual
+                currentLine += char
+

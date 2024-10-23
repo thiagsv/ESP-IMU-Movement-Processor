@@ -5,7 +5,7 @@ from scripts.applyKalmanFilter import applyKalmanFilter
 
 processedFile = 'data/quaternions.sto'
 
-def processIMUData(espDataFile):
+def processIMUData():
     """
     Processes data from the ESP32 device.
 
@@ -14,8 +14,6 @@ def processIMUData(espDataFile):
     is saved in two locations: a timestamped file in the 'opensimData' directory in the user's 
     home directory and a fixed location 'data/quaternions.sto'.
 
-    Args:
-    espDataFile (str): Path to the collected data
 
     Returns:
     None
@@ -24,8 +22,8 @@ def processIMUData(espDataFile):
     createSTOStructure(processedFile)
 
     try:
-            applyFilter()
-            saveFile2User()
+        applyFilter()
+        saveFile2User()
     except Exception as e:
         print(f'Error processing file: {e}')
 

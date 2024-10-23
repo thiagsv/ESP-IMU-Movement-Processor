@@ -77,6 +77,7 @@ def applyKalmanFilter():
     # --- CONSTANTES ---
     n_sensor = 5
     colunasEscritas = 0
+    filePath = 'data/imu/espDataFiltered.txt'
 
     # -------
     i = 0
@@ -137,7 +138,7 @@ def applyKalmanFilter():
     linhaUm = True
     tempoInicial = 0
     linhaCalcular = None
-    with open('data/imu/espData.txt', 'r') as f:
+    with open(filePath, 'r') as f:
         while True:
             dadosBloco = f.read(20)  # Ler um bloco maior para capturar múltiplas linhas
 
