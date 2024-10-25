@@ -1,30 +1,21 @@
 import numpy as np
 from numpy import dot
 import math
-from filterpy.kalman import predict, update
-import matplotlib.pyplot as plt
+from filterpy.kalman import KalmanFilter
 
-float_formartter = "{:.6f}".format
-np.set_printoptions(formatter={'float_kind':float_formartter})
+float_formatter = "{:.6f}".format
+np.set_printoptions(formatter={'float_kind': float_formatter})
 
 def getQuaternionFromEuler(roll, pitch, yaw):
-  """
-  Convert an Euler angle to a quaternion.
+    """
+    Convert an Euler angle to a quaternion.
+    """
+    qw = np.cos(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
+    qx = np.sin(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) - np.cos(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
+    qy = np.cos(roll/2) * np.sin(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.cos(pitch/2) * np.sin(yaw/2)
+    qz = np.cos(roll/2) * np.cos(pitch/2) * np.sin(yaw/2) - np.sin(roll/2) * np.sin(pitch/2) * np.cos(yaw/2)
 
-  Input
-    :param roll: The roll (rotation around x-axis) angle in radians.
-    :param pitch: The pitch (rotation around y-axis) angle in radians.
-    :param yaw: The yaw (rotation around z-axis) angle in radians.
-
-  Output
-    :return qx, qy, qz, qw: The orientation in quaternion [x,y,z,w] format
-  """
-  qw = np.cos(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
-  qx = np.sin(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) - np.cos(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
-  qy = np.cos(roll/2) * np.sin(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.cos(pitch/2) * np.sin(yaw/2)
-  qz = np.cos(roll/2) * np.cos(pitch/2) * np.sin(yaw/2) - np.sin(roll/2) * np.sin(pitch/2) * np.cos(yaw/2)
-
-  return [qw, qx, qy, qz]
+    return [qw, qx, qy, qz]
 
 def getCofactor(mat, temp, p, q, n):
     i = 0
@@ -54,51 +45,33 @@ def determinantOfMatrix(mat):
     return np.linalg.det(mat)
 
 def applyKalmanFilter():
-    # --- CONSTANTES ---
+    # Constants
     n_sensor = 5
-    colunasEscritas = 0
     filePath = 'data/imu/espDataFiltered.txt'
+    outputFilePath = 'data/quaternions.sto'
 
-    # -------
-    i = 0
-    count = 0
-    quart = []
-    temposg = []
+    # Calibration vectors
+    rateCalibrationRoll = [-0.09, -3.68, -4.72, -4.2, 7.55]
+    rateCalibrationPitch = [0.63, -2.89, 1.93, 2.45, 1.07]
+    rateCalibrationYaw = [0.44, -0.42, -0.91, -1.15, 1.87]
 
-    #Vetores com os valores de calibração do giroscópio nos 3 eixos
-    rateCalibrationRoll = [-0.09, -3.68, -4.72, -4.2, 7.55, -3.95, 2.65, -26.7, -1.0, -3.65, 0.0, 0.0, 0.0]
-    rateCalibrationPitch = [0.63, -2.89, 1.93, 2.45, 1.07, -2.74, -3.26, -1.29, 0.72, -0.31, 0.0, 0.0, 0.0]
-    rateCalibrationYaw = [0.44, -0.42, -0.91, -1.15, 1.87, -0.34, -0.59, 0.65, 0.62, 0.45, 0.0, 0.0, 0.0]
+    acelCalibrationRoll = [1.030966, 1.027678, 1.041764, 1.074233, 1.042983]
+    acelCalibrationPitch = [1.003606, 0.983924, 0.987624, 0.98639, 0.98764]
+    acelCalibrationYaw = [0.96429, 1.072670, 0.972605, 0.749889, 1.014723]
 
-    #Vetores com os valores de calibração do acelerômetro nos 3 eixos
-    acelCalibrationRoll = [1.030966, 1.027678, 1.041764,  1.074233, 1.042983, 1.03, 1.06, 1.04, 1.03, 0.96, 0.0, 0.0, 0.0]
-    acelCalibrationPitch =[1.003606, 0.983924, 0.987624, 0.98639, 0.98764, 1.0, 0.99, 0.98, 0.99, 1.01, 0.0, 0.0, 0.0]
-    acelCalibrationYaw = [0.96429, 1.072670, 0.972605,  0.749889, 1.014723, 0.99, 0.74, 1.0, 0.95, 0.89, 0.0, 0.0, 0.0]
+    with open(filePath, 'r') as f, open(outputFilePath, 'w') as outputFile:
+        lines = f.readlines()
 
-    #Matrizes utilizadas no filtro de Kalman
-    #Matriz C do filtro de Kalman
-    c = np.array([
-        [1.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-        [0.0, 1.0, 0.0, 0.0, 0.0, 0.0],
-        [0.0, 0.0, 1.0, 0.0, 0.0, 0.0]
-    ])
+        # Escreve o cabeçalho do arquivo de saída
+        outputFile.write("Time\tqx\tqy\tqz\tqw\n")
 
-    #Matriz Xponto do filtro de Kalman
-    x = np.array([
-        [0.0],
-        [0.0],
-        [0.0],
-        [0.0],
-        [0.0],
-        [0.0]
-    ])
+        for i in range(0, len(lines) - n_sensor, n_sensor):
+            linhaReferencia = lines[i:i+n_sensor]
+            linhaCalcular = lines[i+n_sensor:i+(2*n_sensor)]
 
-    #Matriz u do filtro de Kalman
-    u = np.array([
-        [0.0],
-        [0.0],
-        [0.0]
-    ])
+            for num in range(n_sensor):
+                linhaCalcularNum = linhaCalcular[num].strip().split(',')
+                linhaReferenciaNum = linhaReferencia[num].strip().split(',')
 
     a_shape = (6, 6)
     P = np.zeros(a_shape)
@@ -210,55 +183,69 @@ def applyKalmanFilter():
 
                 # Ti é o delta T entre a coleta atual e a coleta anterior
                 try:
-                    tempo_referencia = float(linhaReferenciaNum[7])  # Pega o último valor da linha
-                    tempo_calculo = float(linhaCalcularNum[7])  # Pega o último valor da linha
+                    tempo_referencia = float(linhaReferenciaNum[7])
+                    tempo_calculo = float(linhaCalcularNum[7])
                 except (IndexError, ValueError):
-                    print(linhaReferenciaNum)
-                    print(linhaCalcularNum)
                     print(f"Erro ao acessar tempo para o sensor {num}.")
                     continue
 
                 Ti = tempo_calculo - tempo_referencia
                 if Ti <= 0:
-                    print(linhaCalcular)
-                    print(linhaReferencia)
                     print(f"Delta T inválido para o sensor {num}.")
                     continue
 
-                #Matriz Q do filtro de Kalman
-                q = np.array([
-                    [m_roll_real * Ti * Ti, 0.0, 0.0, 0.0, 0.0, 0.0],
-                    [0.0, m_pitch_real *Ti * Ti, 0.0, 0.0, 0.0, 0.0],
-                    [0.0, 0.0, m_yaw_real *Ti *Ti, 0.0, 0.0, 0.0],
-                    [0.0, 0.0, 0.0, m_roll_real, 0.0, 0.0],
-                    [0.0, 0.0, 0.0, 0.0, m_pitch_real, 0.0],
-                    [0.0, 0.0, 0.0, 0.0, 0.0, m_yaw_real]
+                # Calibrate accelerometer data
+                linhaCalcularNum[1] = float(linhaCalcularNum[1]) - acelCalibrationRoll[num]
+                linhaCalcularNum[2] = float(linhaCalcularNum[2]) - acelCalibrationPitch[num]
+                linhaCalcularNum[3] = float(linhaCalcularNum[3]) - acelCalibrationYaw[num]
+
+                # Calibrate gyroscope data
+                rateRoll = float(linhaCalcularNum[4]) - rateCalibrationRoll[num]
+                ratePitch = float(linhaCalcularNum[5]) - rateCalibrationPitch[num]
+                rateYaw = float(linhaCalcularNum[6]) - rateCalibrationYaw[num]
+
+                # Calculate Euler angles
+                angleRoll = math.atan(float(linhaCalcularNum[1]) / math.sqrt(
+                    float(linhaCalcularNum[0])**2 + float(linhaCalcularNum[2])**2)) * (180 / math.pi)
+                anglePitch = -math.atan(float(linhaCalcularNum[0]) / math.sqrt(
+                    float(linhaCalcularNum[1])**2 + float(linhaCalcularNum[2])**2)) * (180 / math.pi)
+                angleYaw = math.atan(float(linhaCalcularNum[2]) / math.sqrt(
+                    float(linhaCalcularNum[0])**2 + float(linhaCalcularNum[1])**2)) * (180 / math.pi)
+
+                # Inicializando o filtro de Kalman
+                kf = KalmanFilter(dim_x=6, dim_z=3)
+
+                # Definindo as matrizes do filtro de Kalman
+                kf.F = np.array([
+                    [1, 0, 0, Ti, 0, 0],
+                    [0, 1, 0, 0, Ti, 0],
+                    [0, 0, 1, 0, 0, Ti],
+                    [0, 0, 0, 1, 0, 0],
+                    [0, 0, 0, 0, 1, 0],
+                    [0, 0, 0, 0, 0, 1]
                 ])
 
-                #Matriz B do filtro de Kalman
-                b = np.array([
-                    [Ti, 0.0, 0.0],
-                    [0.0, Ti, 0.0],
-                    [0.0, 0.0, Ti],
-                    [0.0, 0.0, 0.0],
-                    [0.0, 0.0, 0.0],
-                    [0.0, 0.0, 0.0]
+                kf.H = np.array([
+                    [1, 0, 0, 0, 0, 0],
+                    [0, 1, 0, 0, 0, 0],
+                    [0, 0, 1, 0, 0, 0]
                 ])
 
-                #Matriz A do filtro de Kalman
-                a = np.array([
-                    [1.0, 0.0, 0.0, -Ti, 0.0, 0.0],
-                    [0.0, 1.0, 0.0, 0.0, -Ti, 0.0],
-                    [0.0, 0.0, 1.0, 0.0, 0.0, -Ti],
-                    [0.0, 0.0, 0.0, 1.0, 0.0, 0.0],
-                    [0.0, 0.0, 0.0, 0.0, 1.0, 0.0],
-                    [0.0, 0.0, 0.0, 0.0, 0.0, 1.0]
+                kf.R = np.eye(3) * 0.1  # Matriz de ruído de medição
+                kf.Q = np.eye(6) * 0.01  # Matriz de ruído do processo
+                kf.B = np.array([
+                    [Ti, 0, 0],
+                    [0, Ti, 0],
+                    [0, 0, Ti],
+                    [0, 0, 0],
+                    [0, 0, 0],
+                    [0, 0, 0]
                 ])
+                kf.u = np.array([rateRoll, ratePitch, rateYaw]).reshape((3, 1))
 
-                # --- CALIBRAÇÃO DO ACELERÔMETRO ---
-                linhaCalcularNum[1] = (float(linhaCalcularNum[1]) - (acelCalibrationRoll[num]))
-                linhaCalcularNum[2] = (float(linhaCalcularNum[2]) - (acelCalibrationPitch[num]))
-                linhaCalcularNum[3] = (float(linhaCalcularNum[3]) - (acelCalibrationYaw[num]))
+                # Estimação inicial
+                kf.x = np.array([0, 0, 0, 0, 0, 0]).reshape((6, 1))
+                kf.P = np.eye(6)  # Matriz de covariância inicial
 
                 #Offsets + cálculo dos ângulos de Euler
                 offsetRoll = offsets[num]['roll']
