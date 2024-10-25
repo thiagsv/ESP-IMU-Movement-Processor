@@ -47,8 +47,8 @@ def getEspData():
     """
     Obtém os dados do ESP32 e processa os dados IMU.
     """
-    requestIMUData(ipEsp)
-    if filePath:
+    
+    if requestIMUData(ipEsp):
         processIMUData()
     else:
         messagebox.showerror('Erro', 'Falha ao obter dados do ESP32')

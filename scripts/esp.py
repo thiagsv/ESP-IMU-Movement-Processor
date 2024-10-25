@@ -35,7 +35,7 @@ def requestIMUData(ip):
                             return None
         
         validateAndFilterSets(filePath, filteredFilePath)
-    
+        return True
     except requests.RequestException as e:
         print(f'Error connecting to ESP32: {e}')
         return None
