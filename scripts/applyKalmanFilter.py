@@ -50,28 +50,8 @@ def getCofactor(mat, temp, p, q, n):
                     j = 0
                     i += 1
 
-def determinantOfMatrix(mat, n):
-    D = 0
-    if (n == 1):
-        return mat[0][0]
-
-    temp = [[0 for x in range(n)]
-            for y in range(n)]
-
-    sign = 1
-
-    for f in range(n):
-        getCofactor(mat, temp, 0, f, n)
-        D += (sign * mat[0][f] * determinantOfMatrix(temp, n - 1))
-        sign = -sign
-    return D
-
-
-def isInvertible(mat, n):
-    if (determinantOfMatrix(mat, n) != 0):
-        return True
-    else:
-        return False
+def determinantOfMatrix(mat):
+    return np.linalg.det(mat)
 
 def applyKalmanFilter():
     # --- CONSTANTES ---
@@ -131,14 +111,36 @@ def applyKalmanFilter():
     k = np.zeros(nstate_nobs)
     z = np.zeros(n_z)
 
-    nome_sensores = ['pelvis_imu', 'femur_r_imu', 'femur_l_imu', 'tibia_r_imu', 'tibia_l_imu']
+    offsets = [
+        {'roll': -10, 'pitch': -105, 'yaw': -80},
+        {'roll': -10, 'pitch': -100, 'yaw': -100},
+        {'roll': 0, 'pitch': -110, 'yaw': -70},
+        {'roll': -20, 'pitch': -110, 'yaw': -90},
+        {'roll': -90, 'pitch': 90, 'yaw': 0}
+    ]
+
+    n_real = [
+        {'roll': 3, 'pitch': 3, 'yaw': 3},
+        {'roll': 3, 'pitch': 3, 'yaw': 3},
+        {'roll': 3, 'pitch': 3, 'yaw': 3},
+        {'roll': 3, 'pitch': 3, 'yaw': 3},
+        {'roll': 3, 'pitch': 3, 'yaw': 3}
+    ]
+
+    m_real = [
+        {'roll': 5, 'pitch': 5, 'yaw': 0.1},
+        {'roll': 5, 'pitch': 5, 'yaw': 0.1},
+        {'roll': 5, 'pitch': 5, 'yaw': 3},
+        {'roll': 5, 'pitch': 5, 'yaw': 0.1},
+        {'roll': 5, 'pitch': 5, 'yaw': 0.1}
+    ]
 
     # Inicializa a string que vai armazenar os dados lidos
     dadosIMUs = ""
     linhaUm = True
     tempoInicial = 0
     linhaCalcular = None
-    with open(filePath, 'r') as f:
+    with open(filePath, 'r') as f, open('data/quaternions.sto', 'a') as outputFile:
         while True:
             dadosBloco = f.read(20)  # Ler um bloco maior para capturar múltiplas linhas
 
@@ -167,23 +169,7 @@ def applyKalmanFilter():
 
             # Atualiza o buffer para remover apenas as linhas que já foram processadas
             dadosIMUs = ';'.join(linhasRestantes)
-            for num in range(0,n_sensor,1):  # É calculado 1 IMU por vez
-                # --- REINICIANDO TODAS AS VARIÁVEIS ---
-                kalman0g = []
-                kalman1g = []
-                kalman2g = []
-                kalman0grad = []
-                kalman1grad = []
-                kalman2grad = []
-                quartg = []
-                anglerollsg = []
-                anglepitchsg = []
-                angleyawsg = []
-                raterollsg = []
-                ratepitchsg = []
-                rateyawsg = []
-                ciclo = 0
-
+            for num in range(0, n_sensor):  # É calculado 1 IMU por vez, -1 pois começa no 0
                 x = np.array([
                     [0.0],
                     [0.0],
@@ -204,59 +190,13 @@ def applyKalmanFilter():
                 k = np.zeros(nstate_nobs)
                 z = np.zeros(n_z)
 
-                if num == 0:
-                    n_roll_real = 3
-                    n_pitch_real = 3
-                    n_yaw_real = 3
+                n_roll_real = n_real[num]['roll']
+                n_pitch_real = n_real[num]['pitch']
+                n_yaw_real = n_real[num]['yaw']
 
-                    m_roll_real = 5
-                    m_pitch_real = 5
-                    m_yaw_real = 0.1
-
-                elif num == 1:
-                    n_roll_real = 3
-                    n_pitch_real = 3
-                    n_yaw_real = 3
-
-                    m_roll_real = 5
-                    m_pitch_real = 5
-                    m_yaw_real = 0.1
-
-                elif num == 2:
-                    n_roll_real = 3
-                    n_pitch_real = 3
-                    n_yaw_real = 3
-
-                    m_roll_real = 5
-                    m_pitch_real = 5
-                    m_yaw_real = 3
-
-                elif num == 3:
-                    n_roll_real = 3
-                    n_pitch_real = 3
-                    n_yaw_real = 3
-
-                    m_roll_real = 5
-                    m_pitch_real = 5
-                    m_yaw_real = 0.1
-
-                elif num == 4:
-                    n_roll_real = 3
-                    n_pitch_real = 3
-                    n_yaw_real = 3
-
-                    m_roll_real = 5
-                    m_pitch_real = 5
-                    m_yaw_real = 0.1
-
-                elif num == 5:
-                    n_roll_real = 3
-                    n_pitch_real = 3
-                    n_yaw_real = 3
-
-                    m_roll_real = 5
-                    m_pitch_real = 5
-                    m_yaw_real = 0.1
+                m_roll_real = m_real[num]['roll']
+                m_pitch_real = m_real[num]['pitch']
+                m_yaw_real = n_real[num]['yaw']
 
                 #matriz utilizada no filtro de Kalman
                 r = np.array([
@@ -321,36 +261,9 @@ def applyKalmanFilter():
                 linhaCalcularNum[3] = (float(linhaCalcularNum[3]) - (acelCalibrationYaw[num]))
 
                 #Offsets + cálculo dos ângulos de Euler
-                offset = None
-                if num == 0:
-                    offsetRoll = -10
-                    offsetPitch = -105
-                    offsetYaw = -80
-
-                elif num == 1:
-                    offsetRoll = -10
-                    offsetPitch = -100
-                    offsetYaw = -100
-
-                elif num == 2:
-                    offsetRoll = 0
-                    offsetPitch = -110
-                    offsetYaw = -70
-
-                elif num == 3:
-                    offsetRoll = -20
-                    offsetPitch = -110
-                    offsetYaw = -90
-
-                elif num == 4:
-                    offsetRoll = -90
-                    offsetPitch = 90
-                    offsetYaw = 0
-
-                elif num == 5:
-                    offsetRoll = 0
-                    offsetPitch = 0
-                    offsetYaw = 0
+                offsetRoll = offsets[num]['roll']
+                offsetPitch = offsets[num]['pitch']
+                offsetYaw = offsets[num]['yaw']
 
                 angleRoll = offsetRoll + (math.atan((float(linhaCalcularNum[1])) / math.sqrt(
                     (float(linhaCalcularNum[0])) * (float(linhaCalcularNum[0])) +
@@ -363,13 +276,6 @@ def applyKalmanFilter():
                 ))*(1/(math.pi/180)))
 
                 angleYaw = offsetYaw +(math.atan(((float(linhaCalcularNum[2]))/math.sqrt((float(linhaCalcularNum[0]))*(float(linhaCalcularNum[0]))+(float(linhaCalcularNum[1]))*(float(linhaCalcularNum[1]))))))*(1/(math.pi/180))
-
-                #Vetor anglerolls armazena os valores do AngleRoll
-                anglerollsg.append(angleRoll)
-                #Vetor anglepitchsg armazena os valores do AnglePitch
-                anglepitchsg.append(anglePitch)
-                #Vetor angleyawsg armazena os valores do AngleYaw
-                angleyawsg.append(angleYaw)
 
                 TT = (float(linhaCalcularNum[7]) - float(tempoInicial)) # TT é o tempo desde o começo do programa
 
@@ -388,11 +294,6 @@ def applyKalmanFilter():
                 rateYaw = ((float(linhaCalcularNum[5])) - rateCalibrationYaw[num])
                 rateRoll = ((float(linhaCalcularNum[6])) - rateCalibrationRoll[num])
 
-                #Vetores que armazenam os valores dos dados do giroscópio
-                raterollsg.append(rateRoll)
-                ratepitchsg.append(ratePitch)
-                rateyawsg.append(rateYaw)
-
                 #Matriz u do filtro de Kalman (entrada) recebe os valores do giroscópio
                 u[0] = rateRoll
                 u[1] = ratePitch
@@ -405,42 +306,33 @@ def applyKalmanFilter():
                 # --- ETAPA 2: ATUALIZAÇÃO ---
                 S = dot(dot(c, P), c.T) + r
 
-                is_nosingular = determinantOfMatrix(S, 2)
+                is_nosingular = determinantOfMatrix(S)
 
                 k = dot(dot(P, c.T), S)
 
                 if is_nosingular:
                     x, P = update(x, P, z, r, c)
 
-                    #Variáveis do ângulos reais em graus calculados pelo filtro de Kalman
-                    kalman0g.append((x[0][0]))
-                    kalman1g.append((x[1][0]))
-                    kalman2g.append((x[2][0]))
+                    # Conversão para quaterniões
+                    kalman_quaternion = getQuaternionFromEuler(
+                        x[0, 0] * (math.pi / 180),
+                        x[1, 0] * (math.pi / 180),
+                        x[2, 0] * (math.pi / 180)
+                    )
 
-                    #Variáveis do ângulos reais em radianos calculados pelo filtro de Kalman
-                    kalman0grad.append((float(kalman0g[ciclo])*(math.pi/180)))
-                    kalman1grad.append((float(kalman1g[ciclo])*(math.pi/180)))
-                    kalman2grad.append((float(kalman2g[ciclo])*(math.pi/180)))
+                    quart.append(kalman_quaternion)
 
-                    #Função que transforma os ângulos reais do filtro de Kalman em quatérnios
-                    quartg.append(getQuaternionFromEuler(float(kalman0grad[ciclo]),float(kalman1grad[ciclo]),float(kalman2grad[ciclo])))
-
-                    ciclo = ciclo +1
-
-                #armazenando os dados para plotar nos graficos posteriormente
-                quart.append(quartg)
-
-            linha = ''
-            with open('data/quaternions.sto', 'a') as f2:
-                f2.write(str(temposg))
-                f2.write('\t')
+            if len(quart) == n_sensor:
+                linha = ''
+                outputFile.write(str(temposg))
+                outputFile.write('\t')
                 for quat in quart:
-                    linha += ','.join(str(val) for val in quat[0])  # Transformar cada valor do quaternion em string e separar por tab
+                    linha += ','.join(str(val) for val in quat)  # Transformar cada valor do quaternion em string e separar por tab
                     linha += '\t'
                     colunasEscritas += 1
                     if colunasEscritas == n_sensor:
                         linha += '\n'  # Adicionar nova linha após cada quaternion
                         colunasEscritas = 0
-                f2.write(linha)  # Adicionar nova linha após cada quaternion
+                outputFile.write(linha)  # Adicionar nova linha após cada quaternion
 
             quart = []
