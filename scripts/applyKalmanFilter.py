@@ -51,9 +51,9 @@ def applyKalmanFilter():
     outputFilePath = 'data/quaternions.sto'
 
     # Calibration vectors
-    rateCalibrationRoll = [-0.09, -3.68, -4.72, -4.2, 7.55]
-    rateCalibrationPitch = [0.63, -2.89, 1.93, 2.45, 1.07]
-    rateCalibrationYaw = [0.44, -0.42, -0.91, -1.15, 1.87]
+    rateCalibrationRoll = [-0.2, -5.05, -0.02, -1.19, -2.87]
+    rateCalibrationPitch = [-0.2, 0.37, -0.02, 1.46, -0.45]
+    rateCalibrationYaw = [-0.2, 1.2, -0.02, 7.01, -0.19]
 
     acelCalibrationRoll = [1.030966, 1.027678, 1.041764, 1.074233, 1.042983]
     acelCalibrationPitch = [1.003606, 0.983924, 0.987624, 0.98639, 0.98764]
