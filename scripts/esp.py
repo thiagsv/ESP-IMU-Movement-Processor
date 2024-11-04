@@ -84,6 +84,7 @@ def validateAndFilterSets(inputFile, outputFile):
     currentSet = []
     currentLine = ""
     searchingNextSet = False  # Indica se estamos procurando o próximo conjunto
+    removedSets = 0
 
     with open(inputFile, 'r') as infile, open(outputFile, 'w') as outfile:
         while True:
@@ -116,16 +117,19 @@ def validateAndFilterSets(inputFile, outputFile):
                             # Linha do conjunto falhou, busca o próximo conjunto começando com ";0,"
                             searchingNextSet = True
                             currentLine = ""
+                            removedSets += 1
                             continue
                     except ValueError:
                         # Índice inválido, busca o próximo conjunto começando com ";0,"
                         searchingNextSet = True
                         currentLine = ""
+                        removedSets += 1
                         continue
                 else:
                     # Número incorreto de colunas, busca o próximo conjunto começando com ";0,"
                     searchingNextSet = True
                     currentLine = ""
+                    removedSets += 1
                     continue
                 
                 # Se o conjunto tem 5 linhas, adiciona ao resultado e reseta
@@ -138,4 +142,6 @@ def validateAndFilterSets(inputFile, outputFile):
             else:
                 # Acumula o caractere na linha atual
                 currentLine += char
+    
+    print("Conjuntos removidos: ", removedSets)
 
