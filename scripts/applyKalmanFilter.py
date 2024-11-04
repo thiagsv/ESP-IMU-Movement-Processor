@@ -59,20 +59,6 @@ def applyKalmanFilter():
     acelCalibrationPitch = [1.003606, 0.983924, 0.987624, 0.98639, 0.98764]
     acelCalibrationYaw = [0.96429, 1.072670, 0.972605, 0.749889, 1.014723]
 
-    with open(filePath, 'r') as f, open(outputFilePath, 'w') as outputFile:
-        lines = f.readlines()
-
-        # Escreve o cabeçalho do arquivo de saída
-        outputFile.write("Time\tqx\tqy\tqz\tqw\n")
-
-        for i in range(0, len(lines) - n_sensor, n_sensor):
-            linhaReferencia = lines[i:i+n_sensor]
-            linhaCalcular = lines[i+n_sensor:i+(2*n_sensor)]
-
-            for num in range(n_sensor):
-                linhaCalcularNum = linhaCalcular[num].strip().split(',')
-                linhaReferenciaNum = linhaReferencia[num].strip().split(',')
-
     a_shape = (6, 6)
     P = np.zeros(a_shape)
 
