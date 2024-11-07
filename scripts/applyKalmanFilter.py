@@ -1,6 +1,7 @@
 import numpy as np
 import math
 from filterpy.kalman import KalmanFilter
+import matplotlib.pyplot as plt
 
 # Configuração para a formatação de floats
 float_formatter = "{:.6f}".format
@@ -21,6 +22,16 @@ def applyKalmanFilter():
     n_sensor = 5
     filePath = 'data/imu/espDataFiltered.txt'
     outputFilePath = 'data/quaternions.sto'
+
+    #variáveis para gráficos
+    anglesPitch = [[] for _ in range(5)]
+    anglesRoll = [[] for _ in range(5)]
+    anglesYaw = [[] for _ in range(5)]
+    kfAnglesPitch = [[] for _ in range(5)]
+    kfAnglesRoll = [[] for _ in range(5)]
+    kfAnglesYaw = [[] for _ in range(5)]
+    graphTime = [[] for _ in range(5)]
+    tempo_acumulado = [0] * n_sensor
 
     # Vetores de calibração
     rateCalibrationRoll = [-5.05, -0.2, -1.19, -0.02, -2.87]
@@ -70,6 +81,7 @@ def applyKalmanFilter():
                 linhaReferencia = linhaCalcular
                 linhaCalcular = linhas[:n_sensor]
                 linhasRestantes = linhas[n_sensor:]
+
             dadosIMUs = ';'.join(linhasRestantes)
 
             for num in range(n_sensor):
@@ -88,6 +100,9 @@ def applyKalmanFilter():
                     print(f"Delta T inválido para o sensor {num}.")
                     continue
 
+                tempo_acumulado[num] += Ti
+                graphTime[num].append(tempo_acumulado[num])
+
                 # Calibração do acelerômetro
                 linhaCalcularNum[1] = float(linhaCalcularNum[1]) - acelCalibrationRoll[num]
                 linhaCalcularNum[2] = float(linhaCalcularNum[2]) - acelCalibrationPitch[num]
@@ -105,6 +120,10 @@ def applyKalmanFilter():
                     float(linhaCalcularNum[1])**2 + float(linhaCalcularNum[2])**2)) * (180 / math.pi)
                 angleYaw = offsets[num]['yaw'] + math.atan(float(linhaCalcularNum[2]) / math.sqrt(
                     float(linhaCalcularNum[0])**2 + float(linhaCalcularNum[1])**2)) * (180 / math.pi)
+
+                anglesRoll[num].append(angleRoll)
+                anglesPitch[num].append(anglePitch)
+                anglesYaw[num].append(angleYaw)
 
                 # Inicializa o filtro de Kalman
                 kf = KalmanFilter(dim_x=6, dim_z=3)
@@ -150,10 +169,31 @@ def applyKalmanFilter():
                 )
                 quart.append(kalman_quaternion)
 
+                kfAnglesRoll[num].append(kf.x[0, 0])
+                kfAnglesPitch[num].append(kf.x[1, 0])
+                kfAnglesYaw[num].append(kf.x[2, 0])
+
             # Escreve os dados no arquivo após o processamento de todos os sensores
             if len(quart) == n_sensor:
                 outputFile.write(f"{tempo_calculo}\t" + '\t'.join(
                     ','.join(map(str, quat)) for quat in quart) + '\n')
                 quart = []  # Limpa para o próximo conjunto de sensores
 
-print("Processamento concluído e arquivo salvo com sucesso.")
+    for i in range(n_sensor):
+        plt.figure(figsize=(20, 6))
+        plt.plot(graphTime[i], anglesRoll[i], color='r', label='AcelX')  # Vermelho
+        plt.plot(graphTime[i], anglesPitch[i], color='b', label='AcelY')  # Azul escuro
+        plt.plot(graphTime[i], anglesYaw[i], color='g', label='AcelZ')  # Verde
+        plt.plot(graphTime[i], kfAnglesRoll[i], color='y', label='KalmanX')  # Amarelo
+        plt.plot(graphTime[i], kfAnglesPitch[i], color='c', label='KalmanY')  # Azul claro
+        plt.plot(graphTime[i], kfAnglesYaw[i], color='m', label='KalmanZ')  # Rosa
+
+        # Configurações do gráfico
+        plt.xlabel("Tempo [s]")
+        plt.ylabel("Graus [º]")
+        plt.title(f"IMU {i+1}")
+        plt.legend()
+        plt.xticks(np.arange(0, 70, step=1))
+        plt.yticks(np.arange(-270, 100, step=10))
+        plt.grid(color='g', linestyle='--', linewidth=0.5)
+        plt.show()

@@ -109,7 +109,7 @@ def validateAndFilterSets(inputFile, outputFile):
                 if len(columns) == 8:
                     try:
                         # Verifica se o primeiro valor da linha corresponde ao índice esperado
-                        expectedIndex = len(currentSet) % 5
+                        expectedIndex = len(currentSet)
                         if int(columns[0]) == expectedIndex:
                             # Adiciona a linha completa (incluindo o ;) ao conjunto atual
                             currentSet.append(currentLine + ';')
