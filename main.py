@@ -4,7 +4,6 @@ from tkinter import simpledialog, messagebox
 from scripts.opensim import getCalibrationDataPath, generateCalibratedModel, trackingMovement
 from scripts.esp import requestIMUData, startCollectIMUData, finishCollectIMUData
 from scripts.kalmanFilter import processIMUData
-from scripts.applyKalmanFilter import applyKalmanFilter
 
 startCollectBtn = None
 simulateBtn = None
@@ -96,7 +95,6 @@ def showOtherButtons():
     finishCollectBtn.pack_forget()
 
 def main():
-    applyKalmanFilter()
     """
     Configura a interface gráfica e inicializa a aplicação.
     """
