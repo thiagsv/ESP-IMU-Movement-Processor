@@ -42,23 +42,37 @@ def applyKalmanFilter():
     acelCalibrationPitch = [-0.003839, -0.006382, -0.019804, -0.008373, -0.012704]
     acelCalibrationYaw = [-1.109496, 0.078694, -0.007731, 0.030728, -0.018545]
 
-    # Offsets e matrizes de ruído
     offsets = [
-        {'roll': -10, 'pitch': -105, 'yaw': -80},
-        {'roll': -10, 'pitch': -100, 'yaw': -100},
-        {'roll': 0, 'pitch': -110, 'yaw': -70},
-        {'roll': -20, 'pitch': -110, 'yaw': -90},
-        {'roll': -90, 'pitch': 90, 'yaw': 0}
+        {'roll': -90, 'pitch': 90, 'yaw': -180},
+        {'roll': -40, 'pitch': -135, 'yaw': -110},
+        {'roll': -30, 'pitch': -120, 'yaw': -90},
+        {'roll': -18, 'pitch':  -110, 'yaw': -90},
+        {'roll': -12, 'pitch': -105, 'yaw': -90}
     ]
-    
-    n_real = [{'roll': 3, 'pitch': 3, 'yaw': 3}] * n_sensor
-    m_real = [{'roll': 5, 'pitch': 5, 'yaw': 0.1 if i != 2 else 3} for i in range(n_sensor)]
+
+    n_real = [
+        {'roll': 0.05, 'pitch': 0.02, 'yaw': 0.02},
+        {'roll': 0.05, 'pitch': 0.02, 'yaw': 0.02},
+        {'roll': 0.05, 'pitch': 0.02, 'yaw': 0.02},
+        {'roll': 0.05, 'pitch': 0.02, 'yaw': 0.02},
+        {'roll': 0.05, 'pitch': 0.02, 'yaw': 0.02}
+    ]
+
+    m_real = [
+        {'roll': 5, 'pitch': 5, 'yaw': 2},
+        {'roll': 5, 'pitch': 5, 'yaw': 2},
+        {'roll': 5, 'pitch': 5, 'yaw': 2},
+        {'roll': 5, 'pitch': 5, 'yaw': 2},
+        {'roll': 5, 'pitch': 5, 'yaw': 2}
+    ]
 
     quart = []
     with open(filePath, 'r') as f, open(outputFilePath, 'w') as outputFile:
+        outputFile.write('DataRate=100.000000\nDataType=Quaternion\nversion=3\nOpenSimVersion=4.1\nendheader\ntime\tpelvis_imu\tfemur_r_imu\tfemur_l_imu\ttibia_l_imu\ttibia_r_imu\n')
         dadosIMUs = ""
         linhaCalcular = None
         temposg = 0
+
         while True:
             dadosBloco = f.read(20)  # Ler um bloco maior para capturar múltiplas linhas
             if not dadosBloco:
@@ -140,8 +154,23 @@ def applyKalmanFilter():
                     [0, 1, 0, 0, 0, 0],
                     [0, 0, 1, 0, 0, 0]
                 ])
-                kf.R = np.eye(3) * 0.1  # Ruído de medição
-                kf.Q = np.eye(6) * 0.01  # Ruído do processo
+                # Ruído de medição a partir de n_real
+                kf.R = np.array([
+                    [n_real[num]['roll'], 0.0, 0.0],
+                    [0.0, n_real[num]['pitch'], 0.0],
+                    [0.0, 0.0, n_real[num]['yaw']]
+                ])
+
+                # Ruído de processo a partir de m_real
+                kf.Q = np.array([
+                    [m_real[num]['roll'] * Ti * Ti, 0.0, 0.0, 0.0, 0.0, 0.0],
+                    [0.0, m_real[num]['pitch'] * Ti * Ti, 0.0, 0.0, 0.0, 0.0],
+                    [0.0, 0.0, m_real[num]['yaw'] * Ti * Ti, 0.0, 0.0, 0.0],
+                    [0.0, 0.0, 0.0, m_real[num]['roll'], 0.0, 0.0],
+                    [0.0, 0.0, 0.0, 0.0, m_real[num]['pitch'], 0.0],
+                    [0.0, 0.0, 0.0, 0.0, 0.0, m_real[num]['yaw']]
+                ])
+    
                 kf.B = np.array([
                     [Ti, 0, 0],
                     [0, Ti, 0],
