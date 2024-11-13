@@ -23,7 +23,7 @@ def requestIMUData(ip):
             chunk_size = 1024
 
             # Abre o arquivo para escrita
-            with open(filePath, "a") as f:
+            with open(filePath, "w") as f:
                 for chunk in response.iter_content(chunk_size=chunk_size):
                     if chunk:  # Apenas processa chunks não vazios
                         try:

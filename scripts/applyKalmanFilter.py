@@ -34,13 +34,13 @@ def applyKalmanFilter():
     tempo_acumulado = [0] * n_sensor
 
     # Vetores de calibração
-    rateCalibrationRoll = [-0.2, -5.05, -0.02, -1.19, -2.87]
-    rateCalibrationPitch = [-0.2, 0.37, -0.02, 1.46, -0.45]  
-    rateCalibrationYaw = [-0.2, 1.2, -0.02, 7.01, -0.19]
+    rateCalibrationRoll = [-1.19, -5.05, -0.02, -0.02, -2.87]
+    rateCalibrationPitch = [1.46, 0.37, -0.02, -0.02, -0.45]  
+    rateCalibrationYaw = [7.01, 1.2, -0.02, -0.02, -0.19]
 
-    acelCalibrationRoll = [0.055446, 0.082357, 0.046716, 0.017993, 0.022596]
-    acelCalibrationPitch = [-0.003839, -0.006382, -0.019804, -0.008373, -0.012704]
-    acelCalibrationYaw = [-1.109496, 0.078694, -0.007731, 0.030728, -0.018545]
+    acelCalibrationRoll = [0.017993, 0.082357, 0.046716, 0.055446, 0.022596]
+    acelCalibrationPitch = [-0.008373, -0.006382, -0.019804, -0.003839, -0.012704]
+    acelCalibrationYaw = [0.030728, 0.078694, -0.007731, -1.109496, -0.018545]
 
     offsets = [
         {'roll': -90, 'pitch': 90, 'yaw': -180},
