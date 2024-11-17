@@ -43,36 +43,41 @@ def applyKalmanFilter():
     acelCalibrationYaw = [0.030728, 0.078694, -0.007731, -1.109496, -0.018545]
 
     offsets = [
-        {'roll': -90, 'pitch': 90, 'yaw': -180},
-        {'roll': -40, 'pitch': -135, 'yaw': -110},
-        {'roll': -30, 'pitch': -120, 'yaw': -90},
-        {'roll': -18, 'pitch':  -110, 'yaw': -90},
-        {'roll': -12, 'pitch': -105, 'yaw': -90}
+        {'roll': 90, 'pitch': 90, 'yaw':0}, 
+        {'roll': 0, 'pitch': -135, 'yaw': -90},
+        {'roll': -29, 'pitch': -120, 'yaw': -95},
+        {'roll': -20, 'pitch': -110, 'yaw': -90},
+        {'roll': 0, 'pitch': -90, 'yaw': -90}
     ]
 
     n_real = [
-        {'roll': 0.05, 'pitch': 0.02, 'yaw': 0.02},
-        {'roll': 0.05, 'pitch': 0.02, 'yaw': 0.02},
-        {'roll': 0.05, 'pitch': 0.02, 'yaw': 0.02},
-        {'roll': 0.05, 'pitch': 0.02, 'yaw': 0.02},
-        {'roll': 0.05, 'pitch': 0.02, 'yaw': 0.02}
+        {'roll': 0.5, 'pitch': 0.5, 'yaw': 0.5},
+        {'roll': 0.5, 'pitch': 0.5, 'yaw': 0.5},
+        {'roll': 0.5, 'pitch': 0.5, 'yaw': 0.5},
+        {'roll': 0.5, 'pitch': 0.5, 'yaw': 0.5},
+        {'roll': 0.5, 'pitch': 0.5, 'yaw': 0.5}
     ]
 
     m_real = [
-        {'roll': 5, 'pitch': 5, 'yaw': 2},
-        {'roll': 5, 'pitch': 5, 'yaw': 2},
-        {'roll': 5, 'pitch': 5, 'yaw': 2},
-        {'roll': 5, 'pitch': 5, 'yaw': 2},
-        {'roll': 5, 'pitch': 5, 'yaw': 2}
+        {'roll': 10, 'pitch': 10, 'yaw': 10},
+        {'roll': 10, 'pitch': 10, 'yaw': 10},
+        {'roll': 10, 'pitch': 10, 'yaw': 10},
+        {'roll': 10, 'pitch': 10, 'yaw': 10},
+        {'roll': 10, 'pitch': 10, 'yaw': 10}
     ]
 
     quart = []
+    initial_kalman_states = []
+    epsilon = 1e-6
     with open(filePath, 'r') as f, open(outputFilePath, 'w') as outputFile:
-        outputFile.write('DataRate=100.000000\nDataType=Quaternion\nversion=3\nOpenSimVersion=4.1\nendheader\ntime\tpelvis_imu\tfemur_r_imu\tfemur_l_imu\ttibia_l_imu\ttibia_r_imu\n')
+        outputFile.write('DataRate=100.000000\nDataType=Quaternion\nversion=3\nOpenSimVersion=4.1\nendheader\ntime\tpelvis_imu\tfemur_l_imu\tfemur_r_imu\ttibia_r_imu\ttibia_l_imu\n')
         dadosIMUs = ""
         linhaCalcular = None
         temposg = 0
+        primeira = True
 
+        initial_kalman_states = []
+    
         while True:
             dadosBloco = f.read(20)  # Ler um bloco maior para capturar múltiplas linhas
             if not dadosBloco:
@@ -92,6 +97,7 @@ def applyKalmanFilter():
                 linhaCalcular = linhas[n_sensor:2 * n_sensor]
                 linhasRestantes = linhas[2 * n_sensor:]
             else:
+                primeira = False
                 linhaReferencia = linhaCalcular
                 linhaCalcular = linhas[:n_sensor]
                 linhasRestantes = linhas[n_sensor:]
@@ -101,6 +107,19 @@ def applyKalmanFilter():
             for num in range(n_sensor):
                 linhaCalcularNum = linhaCalcular[num].split(',')
                 linhaReferenciaNum = linhaReferencia[num].split(',')
+
+                if primeira:
+                    linhaReferenciaNum = linhaReferencia[num].split(',')
+                    # Calcular os ângulos de Euler iniciais
+                    roll_init = offsets[num]['roll'] + math.atan(
+                        float(linhaReferenciaNum[1]) / math.sqrt(float(linhaReferenciaNum[0])**2 + float(linhaReferenciaNum[2])**2 + epsilon)) * (180 / math.pi)
+                    pitch_init = offsets[num]['pitch'] + -math.atan(
+                        float(linhaReferenciaNum[0]) / math.sqrt(float(linhaReferenciaNum[1])**2 + float(linhaReferenciaNum[2])**2 + epsilon)) * (180 / math.pi)
+                    yaw_init = offsets[num]['yaw'] + math.atan(
+                        float(linhaReferenciaNum[2]) / math.sqrt(float(linhaReferenciaNum[0])**2 + float(linhaReferenciaNum[1])**2 + epsilon)) * (180 / math.pi)
+
+                    # Inicializa o estado do filtro de Kalman para cada sensor
+                    initial_kalman_states.append([roll_init, pitch_init, yaw_init, 0, 0, 0])
 
                 # Extrai tempos e calcula delta T
                 try:
@@ -180,7 +199,7 @@ def applyKalmanFilter():
                     [0, 0, 0]
                 ])
                 kf.u = np.array([rateRoll, ratePitch, rateYaw]).reshape((3, 1))
-                kf.x = np.array([0, 0, 0, 0, 0, 0]).reshape((6, 1))
+                kf.x = np.array(initial_kalman_states[num]).reshape((6, 1))
                 kf.P = np.eye(6)
 
                 # Medida z com ângulos de Euler

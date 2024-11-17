@@ -1,5 +1,25 @@
 import requests
 
+def clearIMUData(ip):
+    """
+    Envia uma requisição para limpar o arquivo de dados no ESP32.
+
+    Args:
+    ip (str): O endereço IP do ESP32.
+
+    Returns:
+    bool: True se a exclusão for bem-sucedida, False caso contrário.
+    """
+    url = f'http://{ip}/clearData'
+    try:
+        response = requests.post(url)
+        response.raise_for_status()
+        print("Arquivo de dados limpo com sucesso no ESP32.")
+        return True
+    except requests.RequestException as e:
+        print(f"Erro ao limpar o arquivo de dados no ESP32: {e}")
+        return False
+
 def requestIMUData(ip):
     """
     Requests IMU data from an ESP32 device.
@@ -35,9 +55,11 @@ def requestIMUData(ip):
                             return None
         
         validateAndFilterSets(filePath, filteredFilePath)
+        clearIMUData(ip)
         return True
     except requests.RequestException as e:
         print(f'Error connecting to ESP32: {e}')
+        clearIMUData(ip)
         return None
 
 
