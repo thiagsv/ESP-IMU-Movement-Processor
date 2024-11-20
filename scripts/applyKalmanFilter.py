@@ -225,9 +225,10 @@ def applyKalmanFilter():
                 kfAnglesYaw[num].append(kalman_filters[num].x[2, 0])
 
             # Escreve os dados no arquivo após o processamento de todos os sensores
-            if len(quart) == n_sensor and tempo_calculo >= 2:
-                outputFile.write(f"{tempo_calculo}\t" + '\t'.join(
-                    ','.join(map(str, quat)) for quat in quart) + '\n')
+            if len(quart) == n_sensor:
+                if tempo_calculo >= 2:
+                    outputFile.write(f"{tempo_calculo - 2}\t" + '\t'.join(
+                        ','.join(map(str, quat)) for quat in quart) + '\n')
                 quart = []  # Limpa para o próximo conjunto de sensores
 
     for i in range(n_sensor):
