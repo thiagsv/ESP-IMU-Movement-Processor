@@ -1,11 +1,15 @@
 import numpy as np
+from numpy import dot
 import math
-from filterpy.kalman import KalmanFilter
+from filterpy.kalman import predict, update
 import matplotlib.pyplot as plt
 
 # Configuração para a formatação de floats
 float_formatter = "{:.6f}".format
 np.set_printoptions(formatter={'float_kind': float_formatter})
+
+def determinant(mat):
+    return np.linalg.det(mat)
 
 def getQuaternionFromEuler(roll, pitch, yaw):
     """
@@ -51,48 +55,47 @@ def applyKalmanFilter():
     ]
 
     n_real = [
-        {'roll': 0.5, 'pitch': 0.5, 'yaw': 0.5},
-        {'roll': 0.5, 'pitch': 0.5, 'yaw': 0.5},
-        {'roll': 0.5, 'pitch': 0.5, 'yaw': 0.5},
-        {'roll': 0.5, 'pitch': 0.5, 'yaw': 0.5},
-        {'roll': 0.5, 'pitch': 0.5, 'yaw': 0.5}
+        {'roll': 2, 'pitch': 2, 'yaw': 2},
+        {'roll': 2, 'pitch': 2, 'yaw': 2},
+        {'roll': 2, 'pitch': 2, 'yaw': 2},
+        {'roll': 2, 'pitch': 2, 'yaw': 2},
+        {'roll': 2, 'pitch': 2, 'yaw': 2}
     ]
 
     m_real = [
-        {'roll': 0.05, 'pitch': 0.05, 'yaw': 0.05},
-        {'roll': 0.05, 'pitch': 0.05, 'yaw': 0.05},
-        {'roll': 0.05, 'pitch': 0.05, 'yaw': 0.05},
-        {'roll': 0.05, 'pitch': 0.05, 'yaw': 0.05},
-        {'roll': 0.05, 'pitch': 0.05, 'yaw': 0.05}
+        {'roll': 5, 'pitch': 5, 'yaw': 5},
+        {'roll': 5, 'pitch': 5, 'yaw': 5},
+        {'roll': 5, 'pitch': 5, 'yaw': 5},
+        {'roll': 5, 'pitch': 5, 'yaw': 5},
+        {'roll': 5, 'pitch': 5, 'yaw': 5}
     ]
 
-    kalman_filters = []
+    # inicializa as matrizes
+
+    c = np.array([
+        [1.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 1.0, 0.0, 0.0, 0.0]
+    ])
+
+    matrizes = []
     for num in range(n_sensor):
-        kf = KalmanFilter(dim_x=6, dim_z=3)
-        kf.H = np.array([[1, 0, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0], [0, 0, 1, 0, 0, 0]])
-        kf.x = np.zeros((6, 1))  # Estado inicial
-        kf.P = np.eye(6)
-        # Ruído de medição a partir de n_real
-        kf.R = np.array([
-            [n_real[num]['roll'], 0.0, 0.0],
-            [0.0, n_real[num]['pitch'], 0.0],
-            [0.0, 0.0, n_real[num]['yaw']]
-        ])
-        kf.Q = np.eye(6)  # Ajuste conforme o ruído do processo
-        kf.F = np.eye(6)  # Ajuste F conforme necessário
-        kalman_filters.append(kf)
+        x = np.zeros((6, 1))
+        P = np.zeros((6, 6))
+        r = np.array([[n_real[num]['roll'], 0.0, 0.0], [0.0, n_real[num]['pitch'], 0.0], [0.0, 0.0, n_real[num]['yaw']]])
+        matriz = {
+            'x': x,
+            'P': P,
+            'r': r
+        }
+        matrizes.append(matriz)
 
     quart = []
-    initial_kalman_states = []
-    epsilon = 1e-6
     with open(filePath, 'r') as f, open(outputFilePath, 'w') as outputFile:
         outputFile.write('DataRate=100.000000\nDataType=Quaternion\nversion=3\nOpenSimVersion=4.1\nendheader\ntime\tpelvis_imu\tfemur_l_imu\tfemur_r_imu\ttibia_r_imu\ttibia_l_imu\n')
         dadosIMUs = ""
         linhaCalcular = None
         temposg = 0
-        primeira = True
-
-        initial_kalman_states = []
     
         while True:
             dadosBloco = f.read(20)  # Ler um bloco maior para capturar múltiplas linhas
@@ -113,7 +116,6 @@ def applyKalmanFilter():
                 linhaCalcular = linhas[n_sensor:2 * n_sensor]
                 linhasRestantes = linhas[2 * n_sensor:]
             else:
-                primeira = False
                 linhaReferencia = linhaCalcular
                 linhaCalcular = linhas[:n_sensor]
                 linhasRestantes = linhas[n_sensor:]
@@ -124,19 +126,6 @@ def applyKalmanFilter():
                 linhaCalcularNum = linhaCalcular[num].split(',')
                 linhaReferenciaNum = linhaReferencia[num].split(',')
 
-                if primeira:
-                    linhaReferenciaNum = linhaReferencia[num].split(',')
-                    # Calcular os ângulos de Euler iniciais
-                    roll_init = offsets[num]['roll'] + math.atan(
-                        float(linhaReferenciaNum[1]) / math.sqrt(float(linhaReferenciaNum[0])**2 + float(linhaReferenciaNum[2])**2 + epsilon)) * (180 / math.pi)
-                    pitch_init = offsets[num]['pitch'] + -math.atan(
-                        float(linhaReferenciaNum[0]) / math.sqrt(float(linhaReferenciaNum[1])**2 + float(linhaReferenciaNum[2])**2 + epsilon)) * (180 / math.pi)
-                    yaw_init = offsets[num]['yaw'] + math.atan(
-                        float(linhaReferenciaNum[2]) / math.sqrt(float(linhaReferenciaNum[0])**2 + float(linhaReferenciaNum[1])**2 + epsilon)) * (180 / math.pi)
-
-                    # Inicializa o estado do filtro de Kalman para cada sensor
-                    initial_kalman_states.append([roll_init, pitch_init, yaw_init, 0, 0, 0])
-
                 # Extrai tempos e calcula delta T
                 try:
                     tempo_referencia = float(linhaReferenciaNum[7]) if len(linhaReferenciaNum) > 7 else 0
@@ -144,7 +133,7 @@ def applyKalmanFilter():
                 except ValueError:
                     print(f"Erro ao converter tempo para o sensor {num}.")
                     continue
-                Ti = tempo_calculo - tempo_referencia
+                Ti = max(0.01, min(0.02, tempo_calculo - tempo_referencia))
                 if Ti <= 0:
                     print(f"Delta T inválido para o sensor {num}.")
                     continue
@@ -175,7 +164,7 @@ def applyKalmanFilter():
                 anglesYaw[num].append(angleYaw)
 
                 # Inicializa o filtro de Kalman
-                kalman_filters[num].F = np.array([
+                a = np.array([
                     [1.0, 0.0, 0.0, -Ti, 0.0, 0.0],
                     [0.0, 1.0, 0.0, 0.0, -Ti, 0.0],
                     [0.0, 0.0, 1.0, 0.0, 0.0, -Ti],
@@ -185,7 +174,7 @@ def applyKalmanFilter():
                 ])
 
                 # Ruído de processo a partir de m_real
-                kalman_filters[num].Q = np.array([ #FICA
+                q = np.array([
                     [m_real[num]['roll'] * Ti * Ti, 0.0, 0.0, 0.0, 0.0, 0.0],
                     [0.0, m_real[num]['pitch'] * Ti * Ti, 0.0, 0.0, 0.0, 0.0],
                     [0.0, 0.0, m_real[num]['yaw'] * Ti * Ti, 0.0, 0.0, 0.0],
@@ -194,7 +183,7 @@ def applyKalmanFilter():
                     [0.0, 0.0, 0.0, 0.0, 0.0, m_real[num]['yaw']]
                 ])
     
-                kalman_filters[num].B = np.array([ #FICA
+                b = np.array([
                     [Ti, 0, 0],
                     [0, Ti, 0],
                     [0, 0, Ti],
@@ -203,26 +192,28 @@ def applyKalmanFilter():
                     [0, 0, 0]
                 ])
 
-                kalman_filters[num].u = np.array([rateRoll, ratePitch, rateYaw]).reshape((3, 1)) #FICA
-
-                # Medida z com ângulos de Euler
-                z = np.array([angleRoll, anglePitch, angleYaw]).reshape((3, 1)) #FICA
+                u = np.array([rateRoll, ratePitch, rateYaw]).reshape((3, 1))
 
                 # Passo de predição e atualização do filtro
-                kalman_filters[num].predict()
-                kalman_filters[num].update(z)
+                matrizes[num]['x'], matrizes[num]['P'] = predict(matrizes[num]['x'], matrizes[num]['P'], a, q, u, b)
 
-                # Converte os ângulos resultantes em quaternions
-                kalman_quaternion = getQuaternionFromEuler(
-                    kalman_filters[num].x[0, 0] * (math.pi / 180),
-                    kalman_filters[num].x[1, 0] * (math.pi / 180),
-                    kalman_filters[num].x[2, 0] * (math.pi / 180)
-                )
-                quart.append(kalman_quaternion)
+                S = dot(dot(c, matrizes[num]['P']), c.T) + matrizes[num]['r']
 
-                kfAnglesRoll[num].append(kalman_filters[num].x[0, 0])
-                kfAnglesPitch[num].append(kalman_filters[num].x[1, 0])
-                kfAnglesYaw[num].append(kalman_filters[num].x[2, 0])
+                if determinant(S) > 1e-10:
+                    z = np.array([angleRoll, anglePitch, angleYaw]).reshape((3, 1))
+                    matrizes[num]['x'], matrizes[num]['P'] = update(matrizes[num]['x'], matrizes[num]['P'], z, matrizes[num]['r'], c)
+
+                    # Converte os ângulos resultantes em quaternions
+                    kalman_quaternion = getQuaternionFromEuler(
+                        matrizes[num]['x'][0, 0] * (math.pi / 180),
+                        matrizes[num]['x'][1, 0] * (math.pi / 180),
+                        matrizes[num]['x'][2, 0] * (math.pi / 180)
+                    )
+                    quart.append(kalman_quaternion)
+
+                    kfAnglesRoll[num].append(matrizes[num]['x'][0, 0])
+                    kfAnglesPitch[num].append(matrizes[num]['x'][1, 0])
+                    kfAnglesYaw[num].append(matrizes[num]['x'][2, 0])
 
             # Escreve os dados no arquivo após o processamento de todos os sensores
             if len(quart) == n_sensor:
