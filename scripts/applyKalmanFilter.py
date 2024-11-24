@@ -1,15 +1,11 @@
 import numpy as np
-from numpy import dot
 import math
-from filterpy.kalman import predict, update
+from filterpy.kalman import KalmanFilter
 import matplotlib.pyplot as plt
 
 # Configuração para a formatação de floats
 float_formatter = "{:.6f}".format
 np.set_printoptions(formatter={'float_kind': float_formatter})
-
-def determinant(mat):
-    return np.linalg.det(mat)
 
 def getQuaternionFromEuler(roll, pitch, yaw):
     """
@@ -38,13 +34,13 @@ def applyKalmanFilter():
     tempo_acumulado = [0] * n_sensor
 
     # Vetores de calibração
-    rateCalibrationRoll = [-1.19, -5.05, -0.02, -0.02, -2.87]
-    rateCalibrationPitch = [1.46, 0.37, -0.02, -0.02, -0.45]  
-    rateCalibrationYaw = [7.01, 1.2, -0.02, -0.02, -0.19]
+    rateCalibrationRoll = [-1.19, -5.05, -1.0, -0.02, -2.87]
+    rateCalibrationPitch = [1.46, 0.37, -1.0, -0.02, -0.45]  
+    rateCalibrationYaw = [7.01, 1.2, -1.0, -0.02, -0.19]
 
-    acelCalibrationRoll = [0.017993, 0.082357, 0.046716, 0.055446, 0.022596]
-    acelCalibrationPitch = [-0.008373, -0.006382, -0.019804, -0.003839, -0.012704]
-    acelCalibrationYaw = [0.030728, 0.078694, -0.007731, -1.109496, -0.018545]
+    acelCalibrationRoll = [0.017993, 0.082357, 0.036993, 0.055446, 0.022596]
+    acelCalibrationPitch = [-0.008373, -0.006382, -0.015372, -0.003839, -0.012704]
+    acelCalibrationYaw = [0.030728, 0.078694, -0.065651, -1.109496, -0.018545]
 
     offsets = [
         {'roll': 90, 'pitch': 90, 'yaw':0}, 
@@ -55,11 +51,11 @@ def applyKalmanFilter():
     ]
 
     n_real = [
-        {'roll': 2, 'pitch': 2, 'yaw': 2},
-        {'roll': 2, 'pitch': 2, 'yaw': 2},
-        {'roll': 2, 'pitch': 2, 'yaw': 2},
-        {'roll': 2, 'pitch': 2, 'yaw': 2},
-        {'roll': 2, 'pitch': 2, 'yaw': 2}
+        {'roll': 3, 'pitch': 3, 'yaw': 3},
+        {'roll': 3, 'pitch': 3, 'yaw': 3},
+        {'roll': 3, 'pitch': 3, 'yaw': 3},
+        {'roll': 3, 'pitch': 3, 'yaw': 3},
+        {'roll': 3, 'pitch': 3, 'yaw': 3}
     ]
 
     m_real = [
@@ -70,25 +66,25 @@ def applyKalmanFilter():
         {'roll': 5, 'pitch': 5, 'yaw': 5}
     ]
 
-    # inicializa as matrizes
-
-    c = np.array([
-        [1.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-        [0.0, 1.0, 0.0, 0.0, 0.0, 0.0],
-        [0.0, 0.0, 1.0, 0.0, 0.0, 0.0]
-    ])
-
-    matrizes = []
+    kalman_filters = []
     for num in range(n_sensor):
-        x = np.zeros((6, 1))
-        P = np.zeros((6, 6))
-        r = np.array([[n_real[num]['roll'], 0.0, 0.0], [0.0, n_real[num]['pitch'], 0.0], [0.0, 0.0, n_real[num]['yaw']]])
-        matriz = {
-            'x': x,
-            'P': P,
-            'r': r
-        }
-        matrizes.append(matriz)
+        kf = KalmanFilter(dim_x=6, dim_z=3)
+        kf.H = np.array([
+            [1, 0, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0]
+        ])
+
+        kf.R = np.array([
+            [n_real[num]['roll'], 0.0, 0.0],
+            [0.0, n_real[num]['pitch'], 0.0],
+            [0.0, 0.0, n_real[num]['yaw']]
+        ])
+
+        kf.x = np.zeros((6, 1))
+        kf.P = np.zeros((6, 6))
+
+        kalman_filters.append(kf)
 
     quart = []
     with open(filePath, 'r') as f, open(outputFilePath, 'w') as outputFile:
@@ -126,6 +122,12 @@ def applyKalmanFilter():
                 linhaCalcularNum = linhaCalcular[num].split(',')
                 linhaReferenciaNum = linhaReferencia[num].split(',')
 
+                if (int(linhaCalcularNum[0]) != num or int(linhaReferenciaNum[0]) != num):
+                    print('MPU ERRADO')
+                    print("linhaReferencia: ", linhaReferenciaNum[0])
+                    print("linhaCalcular: ", linhaCalcularNum[0])
+                    print("num: ", num)
+
                 # Extrai tempos e calcula delta T
                 try:
                     tempo_referencia = float(linhaReferenciaNum[7]) if len(linhaReferenciaNum) > 7 else 0
@@ -133,7 +135,7 @@ def applyKalmanFilter():
                 except ValueError:
                     print(f"Erro ao converter tempo para o sensor {num}.")
                     continue
-                Ti = max(0.01, min(0.02, tempo_calculo - tempo_referencia))
+                Ti = tempo_calculo - tempo_referencia
                 if Ti <= 0:
                     print(f"Delta T inválido para o sensor {num}.")
                     continue
@@ -164,7 +166,7 @@ def applyKalmanFilter():
                 anglesYaw[num].append(angleYaw)
 
                 # Inicializa o filtro de Kalman
-                a = np.array([
+                kalman_filters[num].F = np.array([
                     [1.0, 0.0, 0.0, -Ti, 0.0, 0.0],
                     [0.0, 1.0, 0.0, 0.0, -Ti, 0.0],
                     [0.0, 0.0, 1.0, 0.0, 0.0, -Ti],
@@ -174,7 +176,7 @@ def applyKalmanFilter():
                 ])
 
                 # Ruído de processo a partir de m_real
-                q = np.array([
+                kalman_filters[num].Q = np.array([
                     [m_real[num]['roll'] * Ti * Ti, 0.0, 0.0, 0.0, 0.0, 0.0],
                     [0.0, m_real[num]['pitch'] * Ti * Ti, 0.0, 0.0, 0.0, 0.0],
                     [0.0, 0.0, m_real[num]['yaw'] * Ti * Ti, 0.0, 0.0, 0.0],
@@ -183,7 +185,7 @@ def applyKalmanFilter():
                     [0.0, 0.0, 0.0, 0.0, 0.0, m_real[num]['yaw']]
                 ])
     
-                b = np.array([
+                kalman_filters[num].B = np.array([
                     [Ti, 0, 0],
                     [0, Ti, 0],
                     [0, 0, Ti],
@@ -193,27 +195,26 @@ def applyKalmanFilter():
                 ])
 
                 u = np.array([rateRoll, ratePitch, rateYaw]).reshape((3, 1))
+                z = np.array([angleRoll, anglePitch, angleYaw]).reshape((3, 1))
+
+                if (num == 2 and float(linhaCalcularNum[7]) >= 12 and float(linhaCalcularNum[7]) <= 12.8):
+                    print(z)
 
                 # Passo de predição e atualização do filtro
-                matrizes[num]['x'], matrizes[num]['P'] = predict(matrizes[num]['x'], matrizes[num]['P'], a, q, u, b)
+                kalman_filters[num].predict(u)
+                kalman_filters[num].update(z)
 
-                S = dot(dot(c, matrizes[num]['P']), c.T) + matrizes[num]['r']
+                # Converte os ângulos resultantes em quaternions
+                kalman_quaternion = getQuaternionFromEuler(
+                    kalman_filters[num].x[0, 0] * (math.pi / 180),
+                    kalman_filters[num].x[1, 0] * (math.pi / 180),
+                    kalman_filters[num].x[2, 0] * (math.pi / 180)
+                )
+                quart.append(kalman_quaternion)
 
-                if determinant(S) > 1e-10:
-                    z = np.array([angleRoll, anglePitch, angleYaw]).reshape((3, 1))
-                    matrizes[num]['x'], matrizes[num]['P'] = update(matrizes[num]['x'], matrizes[num]['P'], z, matrizes[num]['r'], c)
-
-                    # Converte os ângulos resultantes em quaternions
-                    kalman_quaternion = getQuaternionFromEuler(
-                        matrizes[num]['x'][0, 0] * (math.pi / 180),
-                        matrizes[num]['x'][1, 0] * (math.pi / 180),
-                        matrizes[num]['x'][2, 0] * (math.pi / 180)
-                    )
-                    quart.append(kalman_quaternion)
-
-                    kfAnglesRoll[num].append(matrizes[num]['x'][0, 0])
-                    kfAnglesPitch[num].append(matrizes[num]['x'][1, 0])
-                    kfAnglesYaw[num].append(matrizes[num]['x'][2, 0])
+                kfAnglesRoll[num].append(kalman_filters[num].x[0, 0])
+                kfAnglesPitch[num].append(kalman_filters[num].x[1, 0])
+                kfAnglesYaw[num].append(kalman_filters[num].x[2, 0])
 
             # Escreve os dados no arquivo após o processamento de todos os sensores
             if len(quart) == n_sensor:
@@ -227,9 +228,9 @@ def applyKalmanFilter():
         plt.plot(graphTime[i], anglesRoll[i], color='r', label='AcelX')  # Vermelho
         plt.plot(graphTime[i], anglesPitch[i], color='b', label='AcelY')  # Azul escuro
         plt.plot(graphTime[i], anglesYaw[i], color='g', label='AcelZ')  # Verde
-        plt.plot(graphTime[i], kfAnglesRoll[i], color='y', label='KalmanX')  # Amarelo
-        plt.plot(graphTime[i], kfAnglesPitch[i], color='c', label='KalmanY')  # Azul claro
-        plt.plot(graphTime[i], kfAnglesYaw[i], color='m', label='KalmanZ')  # Rosa
+        # plt.plot(graphTime[i], kfAnglesRoll[i], color='y', label='KalmanX')  # Amarelo
+        # plt.plot(graphTime[i], kfAnglesPitch[i], color='c', label='KalmanY')  # Azul claro
+        # plt.plot(graphTime[i], kfAnglesYaw[i], color='m', label='KalmanZ')  # Rosa
 
         # Configurações do gráfico
         plt.xlabel("Tempo [s]")
