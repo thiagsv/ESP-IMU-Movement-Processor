@@ -34,36 +34,68 @@ def applyKalmanFilter():
     tempo_acumulado = [0] * n_sensor
 
     # Vetores de calibração
-    rateCalibrationRoll = [-1.19, -5.05, -1.0, -0.02, -2.87]
-    rateCalibrationPitch = [1.46, 0.37, -1.0, -0.02, -0.45]  
-    rateCalibrationYaw = [7.01, 1.2, -1.0, -0.02, -0.19]
+    rateCalibrationRoll = [-2.11, -5.07, 0.29, -1.15, -0.87]
+    rateCalibrationPitch = [-0.56, 0.62, -4.36, 1.05, -0.57]  
+    rateCalibrationYaw = [-1.97, 1.19, -2.47, -1.09, -0.59]
 
-    acelCalibrationRoll = [0.017993, 0.082357, 0.036993, 0.055446, 0.022596]
-    acelCalibrationPitch = [-0.008373, -0.006382, -0.015372, -0.003839, -0.012704]
-    acelCalibrationYaw = [0.030728, 0.078694, -0.065651, -1.109496, -0.018545]
+    acellCalibration = [
+        np.array([0.009146, -0.003567, 0.023015]),
+        np.array([0.081870, -0.004974, 0.078128]),
+        np.array([0.065413, -0.004441, -0.098863]),
+        np.array([0.055446, -0.003839, -1.109496]),
+        np.array([0.018971, 0.003310, 0.116460])
+    ]
+
+    acellInverseMatrix = [
+        np.array([
+            [1.003814, 0.000162, -0.002811],
+            [0.000162, 0.997502, 0.003760],
+            [-0.002811, 0.003760, 0.997041]
+        ]),
+        np.array([
+            [1.004997, 0.000331, 0.000655],
+            [0.000331, 1.006226, -0.000795],
+            [0.000655, -0.000795, 0.979038]
+        ]),
+        np.array([
+            [0.994337, 0.000083, 0.000567],
+            [0.000083, 0.995980, -0.001658],
+            [0.000567, -0.001658, 0.967582]
+        ]),
+        np.array([
+            [1.000174, -0.000115, 0.000493],
+            [-0.000115, 1.000997, -0.003509],
+            [0.000493, -0.003509, 0.980719]
+        ]),
+        np.array([
+            [0.998681, -0.000003, -0.001392],
+            [-0.000003, 1.004926, -0.002661],
+            [-0.001392, -0.002661, 0.990277]
+        ])
+    ]
 
     offsets = [
-        {'roll': 90, 'pitch': 90, 'yaw':0}, 
-        {'roll': 0, 'pitch': -135, 'yaw': -90},
-        {'roll': -29, 'pitch': -120, 'yaw': -95},
-        {'roll': -20, 'pitch': -110, 'yaw': -90},
-        {'roll': 0, 'pitch': -90, 'yaw': -90}
+       {'roll': 0, 'pitch': 90, 'yaw': 90}, 
+       {'roll': 190, 'pitch': -100, 'yaw': 90},
+       {'roll': 0, 'pitch': -100, 'yaw': -100},
+       {'roll': -5, 'pitch': -130, 'yaw': -130},
+       {'roll': 180, 'pitch': -110, 'yaw': 70}
     ]
 
     n_real = [
-        {'roll': 3, 'pitch': 3, 'yaw': 3},
-        {'roll': 3, 'pitch': 3, 'yaw': 3},
-        {'roll': 3, 'pitch': 3, 'yaw': 3},
-        {'roll': 3, 'pitch': 3, 'yaw': 3},
-        {'roll': 3, 'pitch': 3, 'yaw': 3}
+        {'roll': 2.5, 'pitch': 2.5, 'yaw': 2.5},
+        {'roll': 2.5, 'pitch': 2.5, 'yaw': 2.5},
+        {'roll': 2.5, 'pitch': 2.5, 'yaw': 2.5},
+        {'roll': 2.5, 'pitch': 2.5, 'yaw': 2.5},
+        {'roll': 2.5, 'pitch': 2.5, 'yaw': 2.5}
     ]
 
     m_real = [
-        {'roll': 5, 'pitch': 5, 'yaw': 5},
-        {'roll': 5, 'pitch': 5, 'yaw': 5},
-        {'roll': 5, 'pitch': 5, 'yaw': 5},
-        {'roll': 5, 'pitch': 5, 'yaw': 5},
-        {'roll': 5, 'pitch': 5, 'yaw': 5}
+        {'roll': 0.05, 'pitch': 0.05, 'yaw': 0.05},
+        {'roll': 0.05, 'pitch': 0.05, 'yaw': 0.05},
+        {'roll': 0.05, 'pitch': 0.05, 'yaw': 0.05},
+        {'roll': 0.05, 'pitch': 0.05, 'yaw': 0.05},
+        {'roll': 0.05, 'pitch': 0.05, 'yaw': 0.05}
     ]
 
     kalman_filters = []
@@ -88,7 +120,7 @@ def applyKalmanFilter():
 
     quart = []
     with open(filePath, 'r') as f, open(outputFilePath, 'w') as outputFile:
-        outputFile.write('DataRate=100.000000\nDataType=Quaternion\nversion=3\nOpenSimVersion=4.1\nendheader\ntime\tpelvis_imu\tfemur_l_imu\tfemur_r_imu\ttibia_r_imu\ttibia_l_imu\n')
+        outputFile.write('DataRate=100.000000\nDataType=Quaternion\nversion=3\nOpenSimVersion=4.1\nendheader\ntime\tpelvis_imu\tfemur_r_imu\tfemur_l_imu\ttibia_l_imu\ttibia_r_imu\n')
         dadosIMUs = ""
         linhaCalcular = None
         temposg = 0
@@ -121,13 +153,6 @@ def applyKalmanFilter():
             for num in range(n_sensor):
                 linhaCalcularNum = linhaCalcular[num].split(',')
                 linhaReferenciaNum = linhaReferencia[num].split(',')
-
-                if (int(linhaCalcularNum[0]) != num or int(linhaReferenciaNum[0]) != num):
-                    print('MPU ERRADO')
-                    print("linhaReferencia: ", linhaReferenciaNum[0])
-                    print("linhaCalcular: ", linhaCalcularNum[0])
-                    print("num: ", num)
-
                 # Extrai tempos e calcula delta T
                 try:
                     tempo_referencia = float(linhaReferenciaNum[7]) if len(linhaReferenciaNum) > 7 else 0
@@ -143,10 +168,7 @@ def applyKalmanFilter():
                 tempo_acumulado[num] += Ti
                 graphTime[num].append(tempo_acumulado[num])
 
-                # Calibração do acelerômetro
-                linhaCalcularNum[1] = float(linhaCalcularNum[1]) - acelCalibrationRoll[num]
-                linhaCalcularNum[2] = float(linhaCalcularNum[2]) - acelCalibrationPitch[num]
-                linhaCalcularNum[3] = float(linhaCalcularNum[3]) - acelCalibrationYaw[num]
+                accelData = acellInverseMatrix[num] @ (np.array([float(linhaCalcularNum[1]), float(linhaCalcularNum[2]), float(linhaCalcularNum[3])]) - acellCalibration[num])
 
                 # Calibração do giroscópio
                 rateRoll = float(linhaCalcularNum[4]) - rateCalibrationRoll[num]
@@ -154,13 +176,13 @@ def applyKalmanFilter():
                 rateYaw = float(linhaCalcularNum[6]) - rateCalibrationYaw[num]
 
                 # Cálculo dos ângulos de Euler com offsets
-                angleRoll = offsets[num]['roll'] + math.atan(float(linhaCalcularNum[1]) / math.sqrt(
-                    float(linhaCalcularNum[0])**2 + float(linhaCalcularNum[2])**2)) * (180 / math.pi)
-                anglePitch = offsets[num]['pitch'] + -math.atan(float(linhaCalcularNum[0]) / math.sqrt(
-                    float(linhaCalcularNum[1])**2 + float(linhaCalcularNum[2])**2)) * (180 / math.pi)
-                angleYaw = offsets[num]['yaw'] + math.atan(float(linhaCalcularNum[2]) / math.sqrt(
-                    float(linhaCalcularNum[0])**2 + float(linhaCalcularNum[1])**2)) * (180 / math.pi)
-
+                angleRoll = offsets[num]['roll'] + math.atan(float(accelData[1]) / math.sqrt(
+                    float(accelData[0])**2 + float(accelData[2])**2)) * (180 / math.pi)
+                anglePitch = offsets[num]['pitch'] + -math.atan(float(accelData[0]) / math.sqrt(
+                    float(accelData[1])**2 + float(accelData[2])**2)) * (180 / math.pi)
+                angleYaw = offsets[num]['yaw'] + math.atan(float(accelData[2]) / math.sqrt(
+                    float(accelData[0])**2 + float(accelData[1])**2)) * (180 / math.pi)
+        
                 anglesRoll[num].append(angleRoll)
                 anglesPitch[num].append(anglePitch)
                 anglesYaw[num].append(angleYaw)
@@ -197,9 +219,6 @@ def applyKalmanFilter():
                 u = np.array([rateRoll, ratePitch, rateYaw]).reshape((3, 1))
                 z = np.array([angleRoll, anglePitch, angleYaw]).reshape((3, 1))
 
-                if (num == 2 and float(linhaCalcularNum[7]) >= 12 and float(linhaCalcularNum[7]) <= 12.8):
-                    print(z)
-
                 # Passo de predição e atualização do filtro
                 kalman_filters[num].predict(u)
                 kalman_filters[num].update(z)
@@ -228,9 +247,9 @@ def applyKalmanFilter():
         plt.plot(graphTime[i], anglesRoll[i], color='r', label='AcelX')  # Vermelho
         plt.plot(graphTime[i], anglesPitch[i], color='b', label='AcelY')  # Azul escuro
         plt.plot(graphTime[i], anglesYaw[i], color='g', label='AcelZ')  # Verde
-        # plt.plot(graphTime[i], kfAnglesRoll[i], color='y', label='KalmanX')  # Amarelo
-        # plt.plot(graphTime[i], kfAnglesPitch[i], color='c', label='KalmanY')  # Azul claro
-        # plt.plot(graphTime[i], kfAnglesYaw[i], color='m', label='KalmanZ')  # Rosa
+        plt.plot(graphTime[i], kfAnglesRoll[i], color='y', label='KalmanX')  # Amarelo
+        plt.plot(graphTime[i], kfAnglesPitch[i], color='c', label='KalmanY')  # Azul claro
+        plt.plot(graphTime[i], kfAnglesYaw[i], color='m', label='KalmanZ')  # Rosa
 
         # Configurações do gráfico
         plt.xlabel("Tempo [s]")
@@ -238,6 +257,6 @@ def applyKalmanFilter():
         plt.title(f"IMU {i+1}")
         plt.legend()
         plt.xticks(np.arange(0, 70, step=1))
-        plt.yticks(np.arange(-270, 100, step=10))
+        plt.yticks(np.arange(-180, 180, step=10))
         plt.grid(color='g', linestyle='--', linewidth=0.5)
         plt.show()
