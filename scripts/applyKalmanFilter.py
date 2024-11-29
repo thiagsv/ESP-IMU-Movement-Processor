@@ -75,11 +75,19 @@ def applyKalmanFilter():
     ]
 
     offsets = [
-       {'roll': 0, 'pitch': 90, 'yaw': 90}, 
-       {'roll': 190, 'pitch': -100, 'yaw': 90},
-       {'roll': 0, 'pitch': -100, 'yaw': -100},
-       {'roll': -5, 'pitch': -130, 'yaw': -130},
-       {'roll': 180, 'pitch': -110, 'yaw': 70}
+       {'roll': 0, 'pitch': 0, 'yaw': 0}, 
+       {'roll': 0, 'pitch': 0, 'yaw': 0},
+       {'roll': 0, 'pitch': 0, 'yaw': 0},
+       {'roll': 0, 'pitch': 0, 'yaw': 0},
+       {'roll': 0, 'pitch': 0, 'yaw': 0}
+    ]
+
+    offsetGoal = [
+       {'roll': 90, 'pitch': 90, 'yaw': 90}, 
+       {'roll': 0, 'pitch': -180, 'yaw': -90},
+       {'roll': 0, 'pitch': -90, 'yaw': 180},
+       {'roll': 0, 'pitch': -90, 'yaw': 180},
+       {'roll': 0, 'pitch': -180, 'yaw': -90}
     ]
 
     n_real = [
@@ -119,6 +127,7 @@ def applyKalmanFilter():
         kalman_filters.append(kf)
 
     quart = []
+    primeira = True
     with open(filePath, 'r') as f, open(outputFilePath, 'w') as outputFile:
         outputFile.write('DataRate=100.000000\nDataType=Quaternion\nversion=3\nOpenSimVersion=4.1\nendheader\ntime\tpelvis_imu\tfemur_r_imu\tfemur_l_imu\ttibia_l_imu\ttibia_r_imu\n')
         dadosIMUs = ""
@@ -147,6 +156,7 @@ def applyKalmanFilter():
                 linhaReferencia = linhaCalcular
                 linhaCalcular = linhas[:n_sensor]
                 linhasRestantes = linhas[n_sensor:]
+                primeira = False
 
             dadosIMUs = ';'.join(linhasRestantes)
 
@@ -182,6 +192,14 @@ def applyKalmanFilter():
                     float(accelData[1])**2 + float(accelData[2])**2)) * (180 / math.pi)
                 angleYaw = offsets[num]['yaw'] + math.atan(float(accelData[2]) / math.sqrt(
                     float(accelData[0])**2 + float(accelData[1])**2)) * (180 / math.pi)
+                
+                if primeira:
+                    offsets[num]['roll'] = offsetGoal[num]['roll'] - angleRoll
+                    offsets[num]['pitch'] = offsetGoal[num]['pitch'] - anglePitch
+                    offsets[num]['yaw'] = offsetGoal[num]['yaw'] - angleYaw
+                    angleRoll += offsets[num]['roll']
+                    anglePitch += offsets[num]['pitch']
+                    angleYaw += offsets[num]['yaw']
         
                 anglesRoll[num].append(angleRoll)
                 anglesPitch[num].append(anglePitch)
